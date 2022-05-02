@@ -12,6 +12,7 @@ from collections import defaultdict, OrderedDict
 import numpy as np
 from typing import Union
 import os, math
+from .visualizer import Visualizer
 
 
 class TIDEExample:
@@ -97,12 +98,13 @@ class TIDEExample:
         gt_cls = np.array([x['class'] for x in gt])
 
         if len(gt) > 0:
-            # A[i,j] is true iff the prediction i is of the same class as gt j
+            # A[i,j] is true if the prediction is of the same class as gt j
             self.gt_cls_matching = (pred_cls[:, None] == gt_cls[None, :])
             self.gt_cls_iou = self.gt_iou * self.gt_cls_matching
 
             # This will be changed in the matching calculation, so make a copy
             iou_buffer = self.gt_cls_iou.copy()
+            iou_buffer2 = self.gt_cls_iou.copy()
 
             for pred_idx, pred_elem in enumerate(preds):
                 # Find the max iou ground truth for this prediction
@@ -119,8 +121,17 @@ class TIDEExample:
                     pred_elem['matched_with'] = gt_elem['_id']
                     gt_elem['matched_with'] = pred_elem['_id']
 
+                    pred_elem['vis_gt_idx'] = gt_elem['_idx']
+
                     # Make sure this gt can't be used again
                     iou_buffer[:, gt_idx] = 0
+
+                # match the most possibility gt for unmatched pred(visualized needed)
+                if not pred_elem['used']:
+                    if np.max(iou_buffer2[pred_idx, :]) == 0:
+                        pred_elem['vis_gt_idx'] = None
+                    else:
+                        pred_elem['vis_gt_idx'] = gt[np.argmax(iou_buffer2[pred_idx, :])]['_idx']
 
         # Ignore regions annotations allow us to ignore predictions that fall within
         if len(ignore) > 0:
@@ -167,7 +178,8 @@ class TIDERun:
     _temp_vars = ['best_score', 'best_id', 'used', 'matched_with', '_idx', 'usable']
 
     def __init__(self, gt: Data, preds: Data, pos_thresh: float, bg_thresh: float, mode: str, max_dets: int,
-                 run_errors: bool = True, isvideo: bool = False, frame_thr: float = 0.3, temporal_thr: float = 0.7):
+                 run_errors: bool = True, isvideo: bool = False, frame_thr: float = 0.1, temporal_thr: float = 0.7,
+                 image_root: str = None):
         self.gt = gt
         self.preds = preds
 
@@ -189,6 +201,8 @@ class TIDERun:
         self.temporal_thr = temporal_thr
         self.frame_thr = frame_thr
 
+        self.image_root = image_root
+
         self._run()
 
     def _run(self):
@@ -205,7 +219,7 @@ class TIDERun:
                 ignored_classes = self.gt._get_ignored_classes(image)
                 x = [pred for pred in x if pred['class'] not in ignored_classes]
 
-            self._eval_image(x, y)
+            self._eval_image(x, y, image)
 
         # Store a fixed version of all the errors for testing purposes
         for error in self.errors:
@@ -229,7 +243,7 @@ class TIDERun:
         self.errors.append(error)
         self.error_dict[type(error)].append(error)
 
-    def _eval_image(self, preds: list, gt: list):
+    def _eval_image(self, preds: list, gt: list, image: int):
 
         for truth in gt:
             if not truth['ignore']:
@@ -249,10 +263,16 @@ class TIDERun:
         ex = TIDEExample(preds, gt, self.pos_thresh, self.mode, self.max_dets, self.run_errors, self.isvideo)
         preds = ex.preds  # In case the number of predictions was restricted to the max
 
+        visualizer = Visualizer(ex, image, self.gt.images[image]['name'], self.image_root,
+                                save_root='./visualize_output')
+
         for pred_idx, pred in enumerate(preds):
 
             pred['info'] = {'iou': pred['iou'], 'used': pred['used']}
-            if pred['used']: pred['info']['matched_with'] = pred['matched_with']
+            if pred['used']:
+                pred['info']['matched_with'] = pred['matched_with']
+                if self.run_errors:
+                    visualizer.draw(pred, 'TP')
 
             if pred['used'] is not None:
                 self.ap_data.push(pred['class'], pred['_id'], pred['score'], pred['used'], pred['info'])
@@ -264,6 +284,7 @@ class TIDERun:
                 if len(ex.gt) == 0:  # Note this is ex.gt because it doesn't include ignore annotations
                     # There is no ground truth for this image, so just mark everything as BackgroundError
                     self._add_error(BackgroundError(pred))
+                    visualizer.draw(pred, BackgroundError.short_name)
                     continue
 
                 # errors only for video
@@ -299,10 +320,11 @@ class TIDERun:
 
                         temporal_overlap = temporal_good / len(frame_gt_iou)
 
-                        # Test for SpacialBadError
+                        # Test for SpatialBadError
                         # This detection would have been positive if it had higher IoU with this GT
                         if temporal_overlap >= self.temporal_thr:
-                            self._add_error(SpacialBadError(pred, ex.gt[idx], ex))
+                            self._add_error(SpatialBadError(pred, ex.gt[idx], ex))
+                            visualizer.draw(pred, SpatialBadError.short_name)
                             continue
 
                         # Test for TemporalBadError
@@ -310,6 +332,7 @@ class TIDERun:
                         # This detection would have been positive if it had higher IoU with this GT
                         if temporal_overlap < self.temporal_thr:
                             self._add_error(TemporalBadError(pred, ex.gt[idx], ex))
+                            visualizer.draw(pred, TemporalBadError.short_name)
                             continue
 
                 # Test for ClassError
@@ -317,6 +340,7 @@ class TIDERun:
                 if ex.gt_noncls_iou[pred_idx, idx] >= self.pos_thresh:
                     # This detection would have been a positive if it was the correct class
                     self._add_error(ClassError(pred, ex.gt[idx], ex))
+                    visualizer.draw(pred, ClassError.short_name)
                     continue
 
                 # Test for DuplicateError
@@ -325,6 +349,7 @@ class TIDERun:
                     # The detection would have been marked positive but the GT was already in use
                     suppressor = self.preds.annotations[ex.gt[idx]['matched_with']]
                     self._add_error(DuplicateError(pred, suppressor))
+                    visualizer.draw(pred, DuplicateError.short_name)
                     continue
 
                 # Test for BackgroundError
@@ -332,9 +357,10 @@ class TIDERun:
                 if ex.gt_iou[pred_idx, idx] <= self.bg_thresh:
                     # This should have been marked as background
                     self._add_error(BackgroundError(pred))
+                    visualizer.draw(pred, BackgroundError.short_name)
                     continue
 
-                # errors obly for image
+                # errors only for image
                 if not self.isvideo:
                     # Test for BoxError
                     idx = ex.gt_cls_iou[pred_idx, :].argmax()
@@ -345,7 +371,9 @@ class TIDERun:
 
                     # A base case to catch uncaught errors
                     self._add_error(OtherError(pred))
-
+                else:
+                    self._add_error(VideoOtherError(pred))
+                    visualizer.draw(pred, VideoOtherError.short_name)
         for truth in gt:
             # If the GT wasn't used in matching, meaning it's some kind of false negative
             if not truth['ignore'] and not truth['used']:
@@ -358,6 +386,7 @@ class TIDERun:
                     # Note: 'usable' is set in error.py
                     if not truth['usable']:
                         self._add_error(MissedError(truth))
+                        visualizer.draw(truth['_idx'], MissedError.short_name)
 
     def fix_errors(self, condition=lambda x: False, transform=None, false_neg_dict: dict = None,
                    ap_data: ClassedAPDataObject = None,
@@ -483,18 +512,22 @@ class TIDERun:
 class TIDE:
     """
 
-    ████████╗██╗██╗   ██╗██╗████████╗███████╗
-    ╚══██╔══╝██║██║   ██║██║╚══██╔══╝██╔════╝
-       ██║   ██║██║   ██║██║   ██║   █████╗
-       ██║   ██║╚██╗ ██╔╝██║   ██║   ██╔══╝
-       ██║   ██║ ╚████╔╝ ██║   ██║   ███████╗
-       ╚═╝   ╚═╝  ╚═══╝  ╚═╝   ╚═╝   ╚══════╝
+
+    ████████╗██╗██╗   ██╗██╗███████╗███████╗
+    ╚══██╔══╝██║██║   ██║██║██╔════╝██╔════╝
+       ██║   ██║██║   ██║██║███████╗█████╗
+       ██║   ██║╚██╗ ██╔╝██║╚════██║██╔══╝
+       ██║   ██║ ╚████╔╝ ██║███████║███████╗
+       ╚═╝   ╚═╝  ╚═══╝  ╚═╝╚══════╝╚══════╝
+
+
 
    """
 
     # This is just here to define a consistent order of the error types
 
-    _error_types_video = [ClassError, DuplicateError, SpacialBadError, TemporalBadError, BackgroundError, MissedError]
+    _error_types_video = [ClassError, DuplicateError, SpatialBadError, TemporalBadError, BackgroundError, MissedError,
+                          VideoOtherError]
     _error_types = [ClassError, BoxError, OtherError, DuplicateError, BackgroundError, MissedError]
     _special_error_types = [FalsePositiveError, FalseNegativeError]
 
@@ -507,7 +540,8 @@ class TIDE:
     MASK = 'mask'
 
     def __init__(self, pos_threshold: float = 0.5, background_threshold: float = 0.1, mode: str = BOX,
-                 isvideo: bool = False, frame_thr: float = 0.3, temporal_thr: float = 0.7):
+                 isvideo: bool = False, frame_thr: float = 0.1, temporal_thr: float = 0.7,
+                 image_root: str = None):
         self.pos_thresh = pos_threshold
         self.bg_thresh = background_threshold
         self.mode = mode
@@ -515,6 +549,8 @@ class TIDE:
         self.isvideo = isvideo
         self.temporal_thr = temporal_thr
         self.frame_thr = frame_thr
+        # if image root not None ,save the visualize output
+        self.image_root = image_root
 
         if self.isvideo:
             TIDE._error_types = TIDE._error_types_video
@@ -538,7 +574,7 @@ class TIDE:
         name = preds.name if name is None else name
 
         run = TIDERun(gt, preds, pos_thresh, bg_thresh, mode, gt.max_dets, use_for_errors,
-                      self.isvideo, self.frame_thr, self.temporal_thr)
+                      self.isvideo, self.frame_thr, self.temporal_thr, self.image_root)
 
         if use_for_errors:
             self.runs[name] = run

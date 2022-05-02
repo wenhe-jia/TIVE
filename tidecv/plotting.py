@@ -69,7 +69,7 @@ class Plotter():
             self.colors_main = OrderedDict({
                 ClassError.short_name: current_palette[9],
                 DuplicateError.short_name: current_palette[6],
-                SpacialBadError.short_name: current_palette[8],
+                SpatialBadError.short_name: current_palette[8],
                 TemporalBadError.short_name: current_palette[2],
                 BackgroundError.short_name: current_palette[4],
                 MissedError.short_name: current_palette[3],

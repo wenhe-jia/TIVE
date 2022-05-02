@@ -14,10 +14,10 @@ import tidecv.datasets as datasets
 #                                                data_ann=gt)
 # tide = TIDE()
 
-gt = datasets.YTVIS2021(path='/home/jwh/vis/mini360relate/valid_mini.json')
-mask_results = datasets.YTVIS2021Result(path='/home/jwh/vis/mini360relate/results_minioriginal.json',)
-
-tide = TIDE(isvideo=True)
+gt = datasets.YTVIS2021(path='/home/user/Program/video_error/mini360relate/valid_mini.json')
+mask_results = datasets.YTVIS2021Result(path='/home/user/Program/video_error/mini360relate/results_minioriginal.json', )
+image_root = '/home/user/Database/B/Youtube-Video/YTVIS2021/train/JPEGImages'
+tide = TIDE(isvideo=True, image_root=image_root)
 
 
 tide.evaluate_range(gt, mask_results, mode=TIDE.MASK)

@@ -55,9 +55,9 @@ class DuplicateError(Error):
 		return None
 
 
-class SpacialBadError(Error):
+class SpatialBadError(Error):
 	description = "Error caused when a prediction would have been marked positive if it was localized better."
-	short_name = "Spac"
+	short_name = "Spat"
 
 	def __init__(self, pred: dict, gt: dict, ex):
 		self.pred = pred
@@ -101,6 +101,17 @@ class OtherError(Error):
 
 	description = "This detection didn't fall into any of the other error categories."
 	short_name  = "Both"
+
+	def __init__(self, pred:dict):
+		self.pred = pred
+
+	def fix(self):
+		return None
+
+class VideoOtherError(Error):
+
+	description = "This detection didn't fall into any of the other error categories."
+	short_name  = "Other"
 
 	def __init__(self, pred:dict):
 		self.pred = pred
