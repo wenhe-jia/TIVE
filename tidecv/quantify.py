@@ -104,7 +104,7 @@ class TIDEExample:
 
             # This will be changed in the matching calculation, so make a copy
             iou_buffer = self.gt_cls_iou.copy()
-            iou_buffer2 = self.gt_cls_iou.copy()
+            iou_buffer2 = self.gt_iou.copy()
 
             for pred_idx, pred_elem in enumerate(preds):
                 # Find the max iou ground truth for this prediction
@@ -132,6 +132,7 @@ class TIDEExample:
                         pred_elem['vis_gt_idx'] = None
                     else:
                         pred_elem['vis_gt_idx'] = gt[np.argmax(iou_buffer2[pred_idx, :])]['_idx']
+                    pred_elem['iou'] = np.max(iou_buffer2[pred_idx, :])
 
         # Ignore regions annotations allow us to ignore predictions that fall within
         if len(ignore) > 0:
