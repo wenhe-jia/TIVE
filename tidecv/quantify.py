@@ -179,7 +179,7 @@ class TIDERun:
     _temp_vars = ['best_score', 'best_id', 'used', 'matched_with', '_idx', 'usable']
 
     def __init__(self, gt: Data, preds: Data, pos_thresh: float, bg_thresh: float, mode: str, max_dets: int,
-                 run_errors: bool = True, isvideo: bool = False, frame_thr: float = 0.1, temporal_thr: float = 0.7,
+                 run_errors: bool = True, isvideo: bool = False, frame_thr: float = 0.1, temporal_thr: float = 0.4,
                  image_root: str = None):
         self.gt = gt
         self.preds = preds
@@ -265,7 +265,8 @@ class TIDERun:
         preds = ex.preds  # In case the number of predictions was restricted to the max
 
         visualizer = Visualizer(ex, image, self.gt.images[image]['name'], self.image_root,
-                                save_root='./visualize_output')
+                                # save_root='./visualize_output')
+                                save_root=r'E:\AAAAAAAAAAAAAAAAA\visualize_output')
 
         for pred_idx, pred in enumerate(preds):
 
@@ -303,15 +304,24 @@ class TIDERun:
                         #    ['_id', 'score', 'image', 'class', 'bbox', 'mask', 'ignore', 'used', '_idx', 'iou', 'info'])
 
                         frame_gt_iou = np.zeros(len(pred['mask']))
+                        gt_len = pr_len = 0
                         for _i, (_pr, _prgt) in enumerate(zip(pred['mask'], gt_pred['mask'])):
-
                             if _prgt == None and not np.any(mask_utils.decode(_pr)):
                                 # gt and pred both have no mask
-                                tmp_fiou = 1.0
-                            elif _prgt == None and np.any(mask_utils.decode(_pr)):
                                 tmp_fiou = 0.0
-                            else:
+                            elif _prgt == None and np.any(mask_utils.decode(_pr)):
+                                # gt has no mask and pred has mask
+                                tmp_fiou = 0.0
+                                gt_len += 1
+                            elif _prgt != None and not np.any(mask_utils.decode(_pr)):
+                                # gt has mask and pred has no mask
                                 tmp_fiou = mask_utils.iou([_pr], [_prgt], [False])
+                                pr_len += 1
+                            else:
+                                # gt and prd both have mask
+                                tmp_fiou = mask_utils.iou([_pr], [_prgt], [False])
+                                gt_len += 1
+                                pr_len += 1
 
                             frame_gt_iou[_i] = tmp_fiou
                         temporal_good = 0
@@ -319,7 +329,7 @@ class TIDERun:
                             if _iou > self.frame_thr:
                                 temporal_good += 1
 
-                        temporal_overlap = temporal_good / len(frame_gt_iou)
+                        temporal_overlap = temporal_good / gt_len + pr_len
 
                         # Test for SpatialBadError
                         # This detection would have been positive if it had higher IoU with this GT
@@ -541,7 +551,7 @@ class TIDE:
     MASK = 'mask'
 
     def __init__(self, pos_threshold: float = 0.5, background_threshold: float = 0.1, mode: str = BOX,
-                 isvideo: bool = False, frame_thr: float = 0.1, temporal_thr: float = 0.7,
+                 isvideo: bool = False, frame_thr: float = 0.1, temporal_thr: float = 0.4,
                  image_root: str = None):
         self.pos_thresh = pos_threshold
         self.bg_thresh = background_threshold
