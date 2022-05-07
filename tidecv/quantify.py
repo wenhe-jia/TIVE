@@ -329,21 +329,32 @@ class TIDERun:
                             if _iou > self.frame_thr:
                                 temporal_good += 1
 
-                        temporal_overlap = temporal_good / gt_len + pr_len
+                        temporal_overlap = temporal_good / (gt_len + pr_len)
+                        # print(temporal_overlap,temporal_good,gt_len + pr_len)
 
                         # Test for SpatialBadError
                         # This detection would have been positive if it had higher IoU with this GT
                         if temporal_overlap >= self.temporal_thr:
                             self._add_error(SpatialBadError(pred, ex.gt[idx], ex))
                             visualizer.draw(pred, SpatialBadError.short_name)
+
+                            TIDE.saptial_count += 1
+                            if ex.gt[idx]['used']:
+                                TIDE.saptial_matched += 1
+
                             continue
 
                         # Test for TemporalBadError
 
                         # This detection would have been positive if it had higher IoU with this GT
-                        if temporal_overlap < self.temporal_thr:
+                        # if temporal_overlap < self.temporal_thr:
+                        else:
                             self._add_error(TemporalBadError(pred, ex.gt[idx], ex))
                             visualizer.draw(pred, TemporalBadError.short_name)
+
+                            TIDE.temporal_count += 1
+                            if ex.gt[idx]['used']:
+                                TIDE.temporal_matched += 1
                             continue
 
                 # Test for ClassError
@@ -546,9 +557,18 @@ class TIDE:
     COCO_THRESHOLDS = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
     VOL_THRESHOLDS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
+    # Threshold splits for different length for sequence
+    SEQ_THRESHOLDS = [20, 40, 72]
+
     # The modes of evaluation
     BOX = 'bbox'
     MASK = 'mask'
+
+    #
+    temporal_count = 0
+    saptial_count = 0
+    temporal_matched = 0
+    saptial_matched = 0
 
     def __init__(self, pos_threshold: float = 0.5, background_threshold: float = 0.1, mode: str = BOX,
                  isvideo: bool = False, frame_thr: float = 0.1, temporal_thr: float = 0.4,
@@ -605,6 +625,16 @@ class TIDE:
                                 mode=mode, name=name, use_for_errors=(pos_threshold == thresh))
 
             self.run_thresholds[name].append(run)
+
+    def evaluate_length(self, gt: Data, preds: Data, seq_thresholds: list = SEQ_THRESHOLDS,
+                        thresholds: list = COCO_THRESHOLDS, pos_threshold: float = None,
+                        background_threshold: float = None, mode: str = None, name: str = None) -> dict:
+        gt_short, gt_medium, gt_long = Data(gt.name), Data(gt.name), Data(gt.name)
+        # preds_short, preds_medium, preds_long = Data(preds.name), Data(preds.name), Data(preds.name)
+        for im_id in gt.images:
+            annos = gt.get(im_id)
+
+        pass
 
     def add_qualifiers(self, *quals):
         """
@@ -697,6 +727,12 @@ class TIDE:
 
             print()
 
+        print('temporal error number:', TIDE.temporal_count)
+        print('spatial error number:', TIDE.saptial_count)
+        print('the proportion of matched gt for temporal error:', self.temporal_matched,)
+              # self.temporal_matched / self.temporal_count)
+        print('the proportion of matched gt for spatial error:', self.saptial_matched,)
+              # self.saptial_matched / self.saptial_count)
     def plot(self, out_dir: str = None):
         """
         Plots a summary model for each run in this TIDE object.

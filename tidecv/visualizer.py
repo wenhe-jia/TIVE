@@ -188,93 +188,93 @@ class Visualizer:
 
     # draw instance prediction by errortype
     def draw(self, pred, error_type):
-        if self.image_root == None:
-            pass
-        if error_type != 'Miss':
-            print('--processing video:', self.video_id, '  prediction/gt:', pred['_id'], '  save type:', error_type)
-            # creat folder
-            save_path = os.path.join(self.save_root, 'video' + str(self.video_id),
-                                     error_type, )
-        else:
-            print('--processing video:', self.video_id, '  prediction:', pred, '  error type:', error_type)
-            # creat folder
-            save_path = os.path.join(self.save_root, 'video' + str(self.video_id),
+        if self.image_root != None:
 
-                                     error_type, )
+            if error_type != 'Miss':
+                print('--processing video:', self.video_id, '  prediction/gt:', pred['_id'], '  save type:', error_type)
+                # creat folder
+                save_path = os.path.join(self.save_root, 'video' + str(self.video_id),
+                                         error_type, )
+            else:
+                print('--processing video:', self.video_id, '  prediction:', pred, '  error type:', error_type)
+                # creat folder
+                save_path = os.path.join(self.save_root, 'video' + str(self.video_id),
 
-        os.makedirs(save_path, exist_ok=True)
+                                         error_type, )
 
-        _files = list(os.listdir(save_path))
-        if error_type != 'Miss':
-            save_path = os.path.join(save_path, str(len(_files)) + '_score-' + str(round(pred['score'], 2)) + '_iou-' +
-                                     str(round(pred['iou'], 2)))
-            # generate color
-            colors = [x for x in YTVIS_COLOR_2021[pred['class']]][::-1]
-        else:
-            save_path = os.path.join(save_path, str(len(_files)) + '_gtid-' + str(self.ex.gt[pred]['_id']))
-            # generate color
-            colors = [x for x in YTVIS_COLOR_2021[self.ex.gt[pred]['class']]][::-1]
-        os.makedirs(save_path, exist_ok=True)
+            os.makedirs(save_path, exist_ok=True)
 
-        alpha = 0.5
+            _files = list(os.listdir(save_path))
+            if error_type != 'Miss':
+                save_path = os.path.join(save_path, str(len(_files)) + '_score-' + str(round(pred['score'], 2)) + '_iou-' +
+                                         str(round(pred['iou'], 2)))
+                # generate color
+                colors = [x for x in YTVIS_COLOR_2021[pred['class']]][::-1]
+            else:
+                save_path = os.path.join(save_path, str(len(_files)) + '_gtid-' + str(self.ex.gt[pred]['_id']))
+                # generate color
+                colors = [x for x in YTVIS_COLOR_2021[self.ex.gt[pred]['class']]][::-1]
+            os.makedirs(save_path, exist_ok=True)
 
-        # print('get masks')
+            alpha = 0.5
 
-        masks = [None, None]  # [gt_mask,dt_mask]
-        if error_type == 'Miss':
-            masks[0] = self.ex.gt[pred]['mask']
-            txt_gt = ['gt_id:' + str(self.ex.gt[pred]['_id']),
-                      'label:' + YTVIS_CATEGORIES_2021[self.ex.gt[pred]['class']],
-                      'used:' + str(self.ex.gt[pred]['used'])]
+            # print('get masks')
 
-        elif len(self.ex.gt) != 0 and pred['vis_gt_idx'] != None:
-            masks[0] = self.ex.gt[pred['vis_gt_idx']]['mask']
-            txt_gt = ['gt_id:' + str(self.ex.gt[pred['vis_gt_idx']]['_id']),
-                      'label:' + YTVIS_CATEGORIES_2021[self.ex.gt[pred['vis_gt_idx']]['class']],
-                      'used:' + str(self.ex.gt[pred['vis_gt_idx']]['used'])]
-        # if pred exists
-        if error_type != 'Miss':
-            masks[1] = pred['mask']
+            masks = [None, None]  # [gt_mask,dt_mask]
+            if error_type == 'Miss':
+                masks[0] = self.ex.gt[pred]['mask']
+                txt_gt = ['gt_id:' + str(self.ex.gt[pred]['_id']),
+                          'label:' + YTVIS_CATEGORIES_2021[self.ex.gt[pred]['class']],
+                          'used:' + str(self.ex.gt[pred]['used'])]
 
-            txt_pred = ['label:' + YTVIS_CATEGORIES_2021[pred['class']], 'iou:' + str(round(pred['iou'], 2)),
-                        'score:' + str(round(pred['score'], 2))]
+            elif len(self.ex.gt) != 0 and pred['vis_gt_idx'] != None:
+                masks[0] = self.ex.gt[pred['vis_gt_idx']]['mask']
+                txt_gt = ['gt_id:' + str(self.ex.gt[pred['vis_gt_idx']]['_id']),
+                          'label:' + YTVIS_CATEGORIES_2021[self.ex.gt[pred['vis_gt_idx']]['class']],
+                          'used:' + str(self.ex.gt[pred['vis_gt_idx']]['used'])]
+            # if pred exists
+            if error_type != 'Miss':
+                masks[1] = pred['mask']
 
-        # print('drawing')
-        # get masks and dets
-        if masks[0] != None:
-            gtmask = []
-            for idx, gtm in enumerate(masks[0]):
-                if gtm != None:
-                    gtm = mask_utils.decode(toRLE(gtm, self.width, self.height))
-                else:
-                    gtm = np.zeros((self.height, self.width))
-                gtm = self._coloring_mask(gtm, self.images[idx], colors, alpha)
-                gtmask.append(draw_information(gtm, txt_gt, True))
+                txt_pred = ['label:' + YTVIS_CATEGORIES_2021[pred['class']], 'iou:' + str(round(pred['iou'], 2)),
+                            'score:' + str(round(pred['score'], 2))]
 
-            masks[0] = gtmask
-        # if pred exists
-        if error_type != 'Miss':
-            dtmask = []
-            for idx, dtm in enumerate(masks[1]):
-                dtm = mask_utils.decode(dtm)
-                dtm = self._coloring_mask(dtm, self.images[idx], colors, alpha)
-                dtmask.append(draw_information(dtm, txt_pred))
-            masks[1] = dtmask
+            # print('drawing')
+            # get masks and dets
+            if masks[0] != None:
+                gtmask = []
+                for idx, gtm in enumerate(masks[0]):
+                    if gtm != None:
+                        gtm = mask_utils.decode(toRLE(gtm, self.width, self.height))
+                    else:
+                        gtm = np.zeros((self.height, self.width))
+                    gtm = self._coloring_mask(gtm, self.images[idx], colors, alpha)
+                    gtmask.append(draw_information(gtm, txt_gt, True))
 
-        # print('saving')
-        # save images
-        final_imgs = []
+                masks[0] = gtmask
+            # if pred exists
+            if error_type != 'Miss':
+                dtmask = []
+                for idx, dtm in enumerate(masks[1]):
+                    dtm = mask_utils.decode(dtm)
+                    dtm = self._coloring_mask(dtm, self.images[idx], colors, alpha)
+                    dtmask.append(draw_information(dtm, txt_pred))
+                masks[1] = dtmask
 
-        # gt and perd both exist
-        if masks[0] != None and error_type != 'Miss':
-            for dtm, gtm in zip(masks[1], masks[0]):
-                final_imgs.append(np.concatenate([dtm, (np.ones_like(dtm) * 255)[:10], gtm], axis=0))
-        # only pred exists
-        elif masks[0] == None and error_type != 'Miss':
-            final_imgs = masks[1]
-        # only gt exists
-        elif masks[0] != None and error_type == 'Miss':
-            final_imgs = masks[0]
+            # print('saving')
+            # save images
+            final_imgs = []
 
-        for fnum, fim in enumerate(final_imgs):
-            cv2.imwrite(os.path.join(save_path, 'frame-' + str(fnum) + '.jpg'), fim)
+            # gt and perd both exist
+            if masks[0] != None and error_type != 'Miss':
+                for dtm, gtm in zip(masks[1], masks[0]):
+                    final_imgs.append(np.concatenate([dtm, (np.ones_like(dtm) * 255)[:10], gtm], axis=0))
+            # only pred exists
+            elif masks[0] == None and error_type != 'Miss':
+                final_imgs = masks[1]
+            # only gt exists
+            elif masks[0] != None and error_type == 'Miss':
+                final_imgs = masks[0]
+
+            for fnum, fim in enumerate(final_imgs):
+                cv2.imwrite(os.path.join(save_path, 'frame-' + str(fnum) + '.jpg'), fim)
