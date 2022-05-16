@@ -13,7 +13,7 @@ import matplotlib.pylab as plt
 from collections import Counter
 
 if __name__ == '__main__':
-    path = '/home/user/Database/B/Youtube-Video/YTVIS2021/train.json'
+    path = r'G:\code\ytvis2022\mini360relate\valid_mini.json'
 
     json_file = json.load(open(path, 'r'))
     txt = open('./seq.txt', '+a')
@@ -29,7 +29,7 @@ if __name__ == '__main__':
         # # print('video_length', ann['length'])
         #     print('seq_length', len(ann['segmentations']))
         #     print('------',sl)
-        txt.write(str(sl)+'\n')
+        txt.write(str(sl) + '\n')
         seq_length.append(sl)
 
     count = dict(Counter(seq_length))
@@ -37,5 +37,9 @@ if __name__ == '__main__':
     len_list = list(count.keys())
     len_value = list(count.values())
 
-    plt.bar(len_list, len_value)
-    plt.savefig('./length.png')
+    print('short:', np.sum(np.array(seq_length) < 16))
+    print('long:', np.sum(np.array(seq_length) > 32))
+    print('medium:', np.sum(np.logical_and(np.array(seq_length) < 32, np.array(seq_length) > 16)))
+
+    # plt.bar(len_list, len_value)
+    # plt.savefig('./length.png')

@@ -1,5 +1,7 @@
 import sys
 
+import numpy as np
+
 from .data import Data
 from . import functions as f
 
@@ -162,16 +164,21 @@ def YTVIS2021(path: str = None, name: str = None, year: int = 2017, ann_set: str
         video = ann['video_id']
         _class = ann['category_id']
         box = ann['bboxes']
+        gt_len = 0
         # mask = f.toRLE(ann['segmentation'], image_lookup[image]['width'], image_lookup[image]['height'])
         mask = []
         for seg in ann['segmentations']:
             mask.append(
                 f.toRLE(seg, video_lookup[video]['width'], video_lookup[video]['height']) if seg != None else None)
 
+        for _m in mask:
+            if _m != None:
+                gt_len += 1
+
         if ann['iscrowd']:
-            data.add_ignore_region(video, _class, box, mask)
+            data.add_ignore_region(video, _class, box, mask, gt_length=gt_len)
         else:
-            data.add_ground_truth(video, _class, box, mask)
+            data.add_ground_truth(video, _class, box, mask, gt_length=gt_len)
     return data
 
 
@@ -190,8 +197,13 @@ def YTVIS2021Result(path: str, name: str = None) -> Data:
         score = det['score']
         box = det['bbox'] if 'bbox' in det else None
         mask = det['segmentations'] if 'segmentations' in det else None
+        mask_len = 0
+        if mask != None:
+            for _m in mask:
+                if np.any(_m):
+                    mask_len += 1
 
-        data.add_detection(video, _cls, score, box, mask)
+        data.add_detection(video, _cls, score, box, mask, gt_length=mask_len)
 
     return data
 

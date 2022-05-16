@@ -23,6 +23,7 @@ class TIDEExample:
         self.preds = preds
         self.gt = [x for x in gt if not x['ignore']]
         self.ignore_regions = [x for x in gt if x['ignore']]
+        self.pred_ignore = [x for x in preds if x['ignore']]
 
         self.mode = mode
         self.pos_thresh = pos_thresh
@@ -59,16 +60,10 @@ class TIDEExample:
                     u += mask_utils.area(g)
                 elif d and not g:
                     u += mask_utils.area(d)
-            # if not u > .0:
-            # 	print("Mask sizes in video {} and category {} may not match!".format(vidId, catId))
             iou = i / u if u > .0 else .0
             return iou
 
         # IoU is [len(detections), len(gt)]
-        # self.gt_iou = mask_utils.iou(
-        # 	detections,
-        # 	[x[det_type] for x in gt],
-        # 	[False] * len(gt))
 
         if self.isvideo:
             self.gt_iou = np.zeros((len(detections), len(gt)))
@@ -146,13 +141,26 @@ class TIDEExample:
                         # There is no det_type annotation for this specific region so skip it
                         continue
                     # Otherwise, compute the crowd IoU between the detections and this region
-                    ignore_iou = mask_utils.iou(detections, [ignore_region[det_type]], [True])
+
+                    if self.isvideo:
+                        ignore_iou = np.zeros((len(detections)))
+                        for dind, di in enumerate(detections):
+                            ignore_iou[dind] = iou_seq(di, ignore_region[det_type])
+                    else:
+                        ignore_iou = mask_utils.iou(detections, [ignore_region[det_type]], [True])
 
                 for pred_idx, pred_elem in enumerate(preds):
                     if not pred_elem['used'] and (ignore_iou[pred_idx] > self.pos_thresh) \
                             and (ignore_region['class'] == pred_elem['class'] or ignore_region['class'] == -1):
                         # Set the prediction to be ignored
                         pred_elem['used'] = None
+
+        # set ignore to ignored predict
+        if self.isvideo:
+            for idx, pred in enumerate(preds):
+                if pred['used'] != None:
+                    if pred['ignore'] and not pred['used']: pred['used'] = None
+                    # if pred['ignore'] and pred['used']: print('yes')
 
         if len(gt) == 0:
             return
@@ -266,7 +274,7 @@ class TIDERun:
 
         visualizer = Visualizer(ex, image, self.gt.images[image]['name'], self.image_root,
                                 # save_root='./visualize_output')
-                                save_root=r'E:\AAAAAAAAAAAAAAAAA\visualize_output')
+                                save_root=r'E:\AAAAAAAAAAAAAAAAA\visualize_mtr')
 
         for pred_idx, pred in enumerate(preds):
 
@@ -306,17 +314,22 @@ class TIDERun:
                         frame_gt_iou = np.zeros(len(pred['mask']))
                         gt_len = pr_len = 0
                         for _i, (_pr, _prgt) in enumerate(zip(pred['mask'], gt_pred['mask'])):
-                            if _prgt == None and not np.any(mask_utils.decode(_pr)):
+                            if _pr != None:
+                                pr_mask = np.any(mask_utils.decode(_pr))
+                            else:
+                                pr_mask = False
+
+                            if _prgt == None and not pr_mask:
                                 # gt and pred both have no mask
                                 tmp_fiou = 0.0
-                            elif _prgt == None and np.any(mask_utils.decode(_pr)):
+                            elif _prgt == None and pr_mask:
                                 # gt has no mask and pred has mask
                                 tmp_fiou = 0.0
-                                gt_len += 1
-                            elif _prgt != None and not np.any(mask_utils.decode(_pr)):
-                                # gt has mask and pred has no mask
-                                tmp_fiou = mask_utils.iou([_pr], [_prgt], [False])
                                 pr_len += 1
+                            elif _prgt != None and not pr_mask:
+                                # gt has mask and pred has no mask
+                                tmp_fiou = 0.0
+                                gt_len += 1
                             else:
                                 # gt and prd both have mask
                                 tmp_fiou = mask_utils.iou([_pr], [_prgt], [False])
@@ -330,17 +343,12 @@ class TIDERun:
                                 temporal_good += 1
 
                         temporal_overlap = temporal_good / (gt_len + pr_len)
-                        # print(temporal_overlap,temporal_good,gt_len + pr_len)
 
                         # Test for SpatialBadError
                         # This detection would have been positive if it had higher IoU with this GT
                         if temporal_overlap >= self.temporal_thr:
                             self._add_error(SpatialBadError(pred, ex.gt[idx], ex))
                             visualizer.draw(pred, SpatialBadError.short_name)
-
-                            TIDE.saptial_count += 1
-                            if ex.gt[idx]['used']:
-                                TIDE.saptial_matched += 1
 
                             continue
 
@@ -352,9 +360,6 @@ class TIDERun:
                             self._add_error(TemporalBadError(pred, ex.gt[idx], ex))
                             visualizer.draw(pred, TemporalBadError.short_name)
 
-                            TIDE.temporal_count += 1
-                            if ex.gt[idx]['used']:
-                                TIDE.temporal_matched += 1
                             continue
 
                 # Test for ClassError
@@ -535,12 +540,12 @@ class TIDE:
     """
 
 
-    ████████╗██╗██╗   ██╗██╗███████╗███████╗
-    ╚══██╔══╝██║██║   ██║██║██╔════╝██╔════╝
-       ██║   ██║██║   ██║██║███████╗█████╗
-       ██║   ██║╚██╗ ██╔╝██║╚════██║██╔══╝
-       ██║   ██║ ╚████╔╝ ██║███████║███████╗
-       ╚═╝   ╚═╝  ╚═══╝  ╚═╝╚══════╝╚══════╝
+    ████████╗██╗██╗   ██╗███████╗
+    ╚══██╔══╝██║██║   ██║██╔════╝
+       ██║   ██║██║   ██║█████╗
+       ██║   ██║╚██╗ ██╔╝██╔══╝
+       ██║   ██║ ╚████╔╝ ███████╗
+       ╚═╝   ╚═╝  ╚═══╝  ╚══════╝
 
 
 
@@ -558,17 +563,11 @@ class TIDE:
     VOL_THRESHOLDS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
     # Threshold splits for different length for sequence
-    SEQ_THRESHOLDS = [20, 40, 72]
+    SEQ_THRESHOLDS = [16, 32]  # [16, 32]
 
     # The modes of evaluation
     BOX = 'bbox'
     MASK = 'mask'
-
-    #
-    temporal_count = 0
-    saptial_count = 0
-    temporal_matched = 0
-    saptial_matched = 0
 
     def __init__(self, pos_threshold: float = 0.5, background_threshold: float = 0.1, mode: str = BOX,
                  isvideo: bool = False, frame_thr: float = 0.1, temporal_thr: float = 0.4,
@@ -629,12 +628,75 @@ class TIDE:
     def evaluate_length(self, gt: Data, preds: Data, seq_thresholds: list = SEQ_THRESHOLDS,
                         thresholds: list = COCO_THRESHOLDS, pos_threshold: float = None,
                         background_threshold: float = None, mode: str = None, name: str = None) -> dict:
-        gt_short, gt_medium, gt_long = Data(gt.name), Data(gt.name), Data(gt.name)
-        # preds_short, preds_medium, preds_long = Data(preds.name), Data(preds.name), Data(preds.name)
+        gt_short, gt_medium, gt_long = Data('short'), Data('medium'), Data('long')
+        preds_short, preds_medium, preds_long = Data('short'), Data('medium'), Data('long')
+
+        # divide annos into short, medium, long
         for im_id in gt.images:
             annos = gt.get(im_id)
+            for _a in annos:
+                if _a['gt_length'] <= seq_thresholds[0]:
+                    if im_id not in gt_short.images:
+                        gt_short.add_image(im_id, gt.images[im_id]['name'])
+                    gt_short._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'],
+                                  _a['gt_length'])
+                else:
+                    gt_short._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
 
-        pass
+                if seq_thresholds[1] >= _a['gt_length'] > seq_thresholds[0]:
+                    if im_id not in gt_medium.images:
+                        gt_medium.add_image(im_id, gt.images[im_id]['name'])
+                    gt_medium._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'],
+                                   _a['gt_length'])
+                else:
+                    gt_medium._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
+
+                if _a['gt_length'] > seq_thresholds[1]:
+                    if im_id not in gt_long.images:
+                        gt_long.add_image(im_id, gt.images[im_id]['name'])
+                    gt_long._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'], _a['gt_length'])
+                else:
+                    gt_long._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
+
+        # divide detections into short, medium, long
+        for im_id in preds.images:
+            annos = preds.get(im_id)
+            for _a in annos:
+                if _a['gt_length'] <= seq_thresholds[0]:
+                    if im_id not in preds_short.images:
+                        preds_short.add_image(im_id, preds.images[im_id]['name'])
+                    preds_short._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'],
+                                     _a['gt_length'])
+                else:
+                    preds_short._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
+
+                if seq_thresholds[1] >= _a['gt_length'] > seq_thresholds[0]:
+                    if im_id not in preds_medium.images:
+                        preds_medium.add_image(im_id, preds.images[im_id]['name'])
+                    preds_medium._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'],
+                                      _a['gt_length'])
+                else:
+                    preds_medium._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
+
+                if _a['gt_length'] > seq_thresholds[1]:
+                    if im_id not in preds_long.images:
+                        preds_long.add_image(im_id, preds.images[im_id]['name'])
+                    preds_long._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'],
+                                    _a['gt_length'])
+                else:
+                    preds_long._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
+
+        # evaluate
+        # first evaluate all gts and detections
+        print('evaluating all gts and detections')
+        self.evaluate_range(gt, preds, thresholds, pos_threshold, background_threshold, mode, name)
+        # evaluate on long ,short, medium
+        print('evaluating long sequence')
+        self.evaluate_range(gt_long, preds_long, thresholds, pos_threshold, background_threshold, mode, 'long')
+        print('evaluating short sequence')
+        self.evaluate_range(gt_short, preds_short, thresholds, pos_threshold, background_threshold, mode, 'short')
+        print('evaluating medium sequence')
+        self.evaluate_range(gt_medium, preds_medium, thresholds, pos_threshold, background_threshold, mode, 'medium')
 
     def add_qualifiers(self, *quals):
         """
@@ -673,6 +735,10 @@ class TIDE:
                                                         int(thresh_runs[0].pos_thresh * 100),
                                                         int(thresh_runs[-1].pos_thresh * 100))
                 print('{:s}: {:.2f}'.format(ap_title, sum(aps) / len(aps)))
+
+                if run_name in ['long', 'medium', 'short']:
+                    print()
+                    continue
 
                 # Print AP for every threshold on a threshold run
                 P.print_table([
@@ -727,12 +793,6 @@ class TIDE:
 
             print()
 
-        print('temporal error number:', TIDE.temporal_count)
-        print('spatial error number:', TIDE.saptial_count)
-        print('the proportion of matched gt for temporal error:', self.temporal_matched,)
-              # self.temporal_matched / self.temporal_count)
-        print('the proportion of matched gt for spatial error:', self.saptial_matched,)
-              # self.saptial_matched / self.saptial_count)
     def plot(self, out_dir: str = None):
         """
         Plots a summary model for each run in this TIDE object.
@@ -763,6 +823,8 @@ class TIDE:
         errors = {}
 
         for run_name, run in self.runs.items():
+            if run_name in ['long', 'medium', 'short']:
+                continue
             if run_name in self.run_main_errors:
                 errors[run_name] = self.run_main_errors[run_name]
             else:
@@ -777,6 +839,8 @@ class TIDE:
         errors = {}
 
         for run_name, run in self.runs.items():
+            if run_name in ['long', 'medium', 'short']:
+                continue
             if run_name in self.run_special_errors:
                 errors[run_name] = self.run_special_errors[run_name]
             else:
