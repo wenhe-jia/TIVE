@@ -73,6 +73,7 @@ class Plotter():
                 TemporalBadError.short_name: current_palette[2],
                 BackgroundError.short_name: current_palette[4],
                 MissedError.short_name: current_palette[3],
+                VideoOtherError.short_name: current_palette[7],
             })
 
         self.colors_special = OrderedDict({

@@ -691,11 +691,11 @@ class TIDE:
         print('evaluating all gts and detections')
         self.evaluate_range(gt, preds, thresholds, pos_threshold, background_threshold, mode, name)
         # evaluate on long ,short, medium
-        print('evaluating long sequence')
+        print('evaluating long sequences')
         self.evaluate_range(gt_long, preds_long, thresholds, pos_threshold, background_threshold, mode, 'long')
-        print('evaluating short sequence')
+        print('evaluating short sequences')
         self.evaluate_range(gt_short, preds_short, thresholds, pos_threshold, background_threshold, mode, 'short')
-        print('evaluating medium sequence')
+        print('evaluating medium sequences')
         self.evaluate_range(gt_medium, preds_medium, thresholds, pos_threshold, background_threshold, mode, 'medium')
 
     def add_qualifiers(self, *quals):
@@ -803,7 +803,11 @@ class TIDE:
             if not os.path.exists(out_dir):
                 os.makedirs(out_dir)
 
+
         errors = self.get_all_errors()
+
+        if len(errors)==0:
+            return
 
         max_main_error = max(sum([list(x.values()) for x in errors['main'].values()], []))
         max_spec_error = max(sum([list(x.values()) for x in errors['special'].values()], []))
@@ -817,6 +821,8 @@ class TIDE:
 
         # Do the plotting now
         for run_name, run in self.runs.items():
+            if run_name in ['long', 'medium', 'short']:
+                continue
             self.plotter.make_summary_plot(out_dir, errors, run_name, run.mode, hbar_names=True)
 
     def get_main_errors(self):

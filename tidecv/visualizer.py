@@ -11,7 +11,6 @@ import cv2
 import numpy as np
 import pycocotools.mask as mask_utils
 
-
 YTVIS_CATEGORIES_2021 = {
     1: "airplane",
     2: "bear",
@@ -124,7 +123,7 @@ def draw_information(im_in1, insid, is_gt=False):
             [220, 220, 220])  # np.zeros((10,10,3))
 
         x = margin
-        if _nt==0:
+        if _nt == 0:
             y = text_height + y
         else:
             y = text_height + y + margin
@@ -191,22 +190,20 @@ class Visualizer:
         if self.image_root != None:
 
             if error_type != 'Miss':
-                print('--processing video:', self.video_id, '  prediction/gt:', pred['_id'], '  save type:', error_type)
+                print('--processing video:', self.video_id, '  prediction:', pred['_id'], '  save type:', error_type)
                 # creat folder
-                save_path = os.path.join(self.save_root, 'video' + str(self.video_id),
-                                         error_type, )
+                save_path = os.path.join(self.save_root, 'video' + str(self.video_id), error_type, )
             else:
-                print('--processing video:', self.video_id, '  prediction:', pred, '  error type:', error_type)
+                print('--processing video:', self.video_id, '  gt:', pred, '  save type:', error_type)
                 # creat folder
-                save_path = os.path.join(self.save_root, 'video' + str(self.video_id),
-
-                                         error_type, )
+                save_path = os.path.join(self.save_root, 'video' + str(self.video_id), error_type, )
 
             os.makedirs(save_path, exist_ok=True)
 
             _files = list(os.listdir(save_path))
             if error_type != 'Miss':
-                save_path = os.path.join(save_path, str(len(_files)) + '_score-' + str(round(pred['score'], 2)) + '_iou-' +
+                save_path = os.path.join(save_path,
+                                         str(len(_files)) + '_score-' + str(round(pred['score'], 2)) + '_iou-' +
                                          str(round(pred['iou'], 2)))
                 # generate color
                 colors = [x for x in YTVIS_COLOR_2021[pred['class']]][::-1]
@@ -256,7 +253,10 @@ class Visualizer:
             if error_type != 'Miss':
                 dtmask = []
                 for idx, dtm in enumerate(masks[1]):
-                    dtm = mask_utils.decode(dtm)
+                    if dtm == None:
+                        dtm = np.zeros((self.height, self.width))
+                    else:
+                        dtm = mask_utils.decode(dtm)
                     dtm = self._coloring_mask(dtm, self.images[idx], colors, alpha)
                     dtmask.append(draw_information(dtm, txt_pred))
                 masks[1] = dtmask

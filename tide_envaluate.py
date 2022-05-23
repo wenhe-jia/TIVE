@@ -14,9 +14,11 @@ import tidecv.datasets as datasets
 #                                                data_ann=gt)
 # tide = TIDE()
 
-gt = datasets.YTVIS2021(path='G:/code/ytvis2022/mini360relate/valid_mini.json')
-# mask_results = datasets.YTVIS2021Result(path=r'G:\code\ytvis2022\mini360relate\results_seq_r50.json', )
-mask_results = datasets.YTVIS2021Result(path=r'G:\code\ytvis2022\mini360relate\results_mtr_r50.json', )
+# gt = datasets.YTVIS2021(path='G:/code/ytvis2022/mini360relate/valid_mini.json')
+gt = datasets.YTVIS2021(path='G:/code/ytvis2022/mini360relate/valid_mini_continuous.json')
+
+mask_results = datasets.YTVIS2021Result(path=r'G:\code\ytvis2022\mini360relate\results_tevit_r50.json', )
+# mask_results = datasets.YTVIS2021Result(path=r'G:\code\ytvis2022\mini360relate\results_ifc_r50_T=36.json', )
 
 
 
@@ -28,4 +30,4 @@ tide = TIDE(isvideo=True, image_root=image_root)
 tide.evaluate_length(gt, mask_results, mode=TIDE.MASK)
 
 tide.summarize()
-# tide.plot(out_dir='./tide_output')
+tide.plot(out_dir='./tide_output')
