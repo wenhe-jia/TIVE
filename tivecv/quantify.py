@@ -1,10 +1,9 @@
+# Modified by Zilong Jia from https://github.com/dbolya/tide
 import sys
 
-from .data import Data
-from .ap import ClassedAPDataObject
+from .data import TiveData
 from .errors.main_errors import *
-from .errors.qualifiers import Qualifier, AREA
-from . import functions as f
+from .visualizer import Visualizer
 from . import plotting as P
 
 from pycocotools import mask as mask_utils
@@ -12,26 +11,23 @@ from collections import defaultdict, OrderedDict
 import numpy as np
 from typing import Union
 import os, math
-from .visualizer import Visualizer
+
+from tidecv.ap import ClassedAPDataObject
+from tidecv.errors.main_errors import *
+from tidecv.errors.qualifiers import Qualifier, AREA
+from tidecv.quantify import TIDE,TIDEExample,TIDERun
+from tidecv import functions as f
 
 
-class TIDEExample:
+class TIVEExample(TIDEExample):
     """ Computes all the data needed to evaluate a set of predictions and gt for a single image. """
 
     def __init__(self, preds: list, gt: list, pos_thresh: float, mode: str, max_dets: int, run_errors: bool = True,
                  isvideo: bool = False):
-        self.preds = preds
-        self.gt = [x for x in gt if not x['ignore']]
-        self.ignore_regions = [x for x in gt if x['ignore']]
         self.pred_ignore = [x for x in preds if x['ignore']]
-
-        self.mode = mode
-        self.pos_thresh = pos_thresh
-        self.max_dets = max_dets
-        self.run_errors = run_errors
         self.isvideo = isvideo
+        super().__init__(preds, gt, pos_thresh, mode, max_dets, run_errors)
 
-        self._run()
 
     def _run(self):
         preds = self.preds
@@ -180,39 +176,20 @@ class TIDEExample:
             self.gt_used_cls = self.gt_used_iou * self.gt_cls_matching
 
 
-class TIDERun:
+class TIVERun(TIDERun):
     """ Holds the data for a single run of TIDE. """
 
-    # Temporary variables stored in ground truth that we need to clear after a run
-    _temp_vars = ['best_score', 'best_id', 'used', 'matched_with', '_idx', 'usable']
-
-    def __init__(self, gt: Data, preds: Data, pos_thresh: float, bg_thresh: float, mode: str, max_dets: int,
+    def __init__(self, gt: TiveData, preds: TiveData, pos_thresh: float, bg_thresh: float, mode: str, max_dets: int,
                  run_errors: bool = True, isvideo: bool = False, frame_thr: float = 0.1, temporal_thr: float = 0.4,
                  image_root: str = None):
-        self.gt = gt
-        self.preds = preds
-
-        self.errors = []
-        self.error_dict = {_type: [] for _type in TIDE._error_types}
-        self.ap_data = ClassedAPDataObject()
-        self.qualifiers = {}
-
-        # A list of false negatives per class
-        self.false_negatives = {_id: [] for _id in self.gt.classes}
-
-        self.pos_thresh = pos_thresh
-        self.bg_thresh = bg_thresh
-        self.mode = mode
-        self.max_dets = max_dets
-        self.run_errors = run_errors
-
         self.isvideo = isvideo
         self.temporal_thr = temporal_thr
         self.frame_thr = frame_thr
 
         self.image_root = image_root
 
-        self._run()
+        super().__init__(gt,preds,pos_thresh,bg_thresh,mode,max_dets,run_errors)
+
 
     def _run(self):
         """ And awaaay we go """
@@ -241,16 +218,7 @@ class TIDERun:
         # Now that we've stored the fixed errors, we can clear the gt info
         self._clear()
 
-    def _clear(self):
-        """ Clears the ground truth so that it's ready for another run. """
-        for gt in self.gt.annotations:
-            for var in self._temp_vars:
-                if var in gt:
-                    del gt[var]
 
-    def _add_error(self, error):
-        self.errors.append(error)
-        self.error_dict[type(error)].append(error)
 
     def _eval_image(self, preds: list, gt: list, image: int):
 
@@ -269,7 +237,7 @@ class TIDERun:
                         self.false_negatives[truth['class']].append(truth)
             return
 
-        ex = TIDEExample(preds, gt, self.pos_thresh, self.mode, self.max_dets, self.run_errors, self.isvideo)
+        ex = TIVEExample(preds, gt, self.pos_thresh, self.mode, self.max_dets, self.run_errors, self.isvideo)
         preds = ex.preds  # In case the number of predictions was restricted to the max
 
         visualizer = Visualizer(ex, image, self.gt.images[image]['name'], self.image_root,
@@ -415,128 +383,8 @@ class TIDERun:
                         self._add_error(MissedError(truth))
                         visualizer.draw(truth['_idx'], MissedError.short_name)
 
-    def fix_errors(self, condition=lambda x: False, transform=None, false_neg_dict: dict = None,
-                   ap_data: ClassedAPDataObject = None,
-                   disable_errors: bool = False) -> ClassedAPDataObject:
-        """ Returns a ClassedAPDataObject where all errors given the condition returns True are fixed. """
-        if ap_data is None:
-            ap_data = self.ap_data
 
-        gt_pos = ap_data.get_gt_positives()
-        new_ap_data = ClassedAPDataObject()
-
-        # Potentially fix every error case
-        for error in self.errors:
-            if error.disabled:
-                continue
-
-            _id = error.get_id()
-            _cls, data_point = error.original
-
-            if condition(error):
-                _cls, data_point = error.fixed
-
-                if disable_errors:
-                    error.disabled = True
-
-                # Specific for MissingError (or anything else that affects #GT)
-                if isinstance(data_point, int):
-                    gt_pos[_cls] += data_point
-                    data_point = None
-
-            if data_point is not None:
-                if transform is not None:
-                    data_point = transform(*data_point)
-                new_ap_data.push(_cls, _id, *data_point)
-
-        # Add back all the correct ones
-        for k in gt_pos.keys():
-            for _id, (score, correct, info) in ap_data.objs[k].data_points.items():
-                if correct:
-                    if transform is not None:
-                        score, correct, info = transform(score, correct, info)
-                    new_ap_data.push(k, _id, score, correct, info)
-
-        # Add the correct amount of GT positives, and also subtract if necessary
-        for k, v in gt_pos.items():
-            # In case you want to fix all false negatives without affecting precision
-            if false_neg_dict is not None and k in false_neg_dict:
-                v -= len(false_neg_dict[k])
-            new_ap_data.add_gt_positives(k, v)
-
-        return new_ap_data
-
-    def fix_main_errors(self, progressive: bool = False, error_types: list = None, qual: Qualifier = None) -> dict:
-        ap_data = self.ap_data
-        last_ap = self.ap
-
-        if qual is None:
-            qual = Qualifier('', None)
-
-        if error_types is None:
-            error_types = TIDE._error_types
-
-        errors = {}
-
-        for error in error_types:
-            _ap_data = self.fix_errors(qual._make_error_func(error),
-                                       ap_data=ap_data, disable_errors=progressive)
-
-            new_ap = _ap_data.get_mAP()
-            # If an error is negative that means it's likely due to binning differences, so just
-            # Ignore the negative by setting it to 0.
-            errors[error] = max(new_ap - last_ap, 0)
-
-            if progressive:
-                last_ap = new_ap
-                ap_data = _ap_data
-
-        if progressive:
-            for error in self.errors:
-                error.disabled = False
-
-        return errors
-
-    def fix_special_errors(self, qual=None) -> dict:
-        return {
-            FalsePositiveError: self.fix_errors(transform=FalsePositiveError.fix).get_mAP() - self.ap,
-            FalseNegativeError: self.fix_errors(false_neg_dict=self.false_negatives).get_mAP() - self.ap}
-
-    def count_errors(self, error_types: list = None, qual=None):
-        counts = {}
-
-        if error_types is None:
-            error_types = TIDE._error_types
-
-        for error in error_types:
-            if qual is None:
-                counts[error] = len(self.error_dict[error])
-            else:
-                func = qualifiers.make_qualifier(error, qual)
-                counts[error] = len([x for x in self.errors if func(x)])
-
-        return counts
-
-    def apply_qualifier(self, qualifier: Qualifier) -> ClassedAPDataObject:
-        """ Applies a qualifier lambda to the AP object for this runs and stores the result in self.qualifiers. """
-
-        pred_keep = defaultdict(lambda: set())
-        gt_keep = defaultdict(lambda: set())
-
-        for pred in self.preds.annotations:
-            if qualifier.test(pred):
-                pred_keep[pred['class']].add(pred['_id'])
-
-        for gt in self.gt.annotations:
-            if not gt['ignore'] and qualifier.test(gt):
-                gt_keep[gt['class']].add(gt['_id'])
-
-        new_ap_data = self.ap_data.apply_qualifier(pred_keep, gt_keep)
-        self.qualifiers[qualifier.name] = new_ap_data.get_mAP()
-        return new_ap_data
-
-
-class TIDE:
+class TIVE(TIDE):
     """
 
 
@@ -569,13 +417,10 @@ class TIDE:
     BOX = 'bbox'
     MASK = 'mask'
 
-    def __init__(self, pos_threshold: float = 0.5, background_threshold: float = 0.1, mode: str = BOX,
+    def __init__(self, pos_threshold: float = 0.5, background_threshold: float = 0.1, mode: str = MASK,
                  isvideo: bool = False, frame_thr: float = 0.1, temporal_thr: float = 0.4,
                  image_root: str = None):
-        self.pos_thresh = pos_threshold
-        self.bg_thresh = background_threshold
-        self.mode = mode
-
+        super().__init__(pos_threshold,background_threshold,mode)
         self.isvideo = isvideo
         self.temporal_thr = temporal_thr
         self.frame_thr = frame_thr
@@ -583,27 +428,19 @@ class TIDE:
         self.image_root = image_root
 
         if self.isvideo:
-            TIDE._error_types = TIDE._error_types_video
+            TIVE._error_types = TIVE._error_types_video
+            TIDE._error_types = TIVE._error_types_video
 
-        self.pos_thresh_int = int(self.pos_thresh * 100)
+        self.plotter = P.TivePlotter(isvideo=self.isvideo)
 
-        self.runs = {}
-        self.run_thresholds = {}
-        self.run_main_errors = {}
-        self.run_special_errors = {}
-
-        self.qualifiers = OrderedDict()
-
-        self.plotter = P.Plotter(isvideo=self.isvideo)
-
-    def evaluate(self, gt: Data, preds: Data, pos_threshold: float = None, background_threshold: float = None,
+    def evaluate(self, gt: TiveData, preds: TiveData, pos_threshold: float = None, background_threshold: float = None,
                  mode: str = None, name: str = None, use_for_errors: bool = True) -> TIDERun:
         pos_thresh = self.pos_thresh if pos_threshold is None else pos_threshold
         bg_thresh = self.bg_thresh if background_threshold is None else background_threshold
         mode = self.mode if mode is None else mode
         name = preds.name if name is None else name
 
-        run = TIDERun(gt, preds, pos_thresh, bg_thresh, mode, gt.max_dets, use_for_errors,
+        run = TIVERun(gt, preds, pos_thresh, bg_thresh, mode, gt.max_dets, use_for_errors,
                       self.isvideo, self.frame_thr, self.temporal_thr, self.image_root)
 
         if use_for_errors:
@@ -611,25 +448,11 @@ class TIDE:
 
         return run
 
-    def evaluate_range(self, gt: Data, preds: Data, thresholds: list = COCO_THRESHOLDS, pos_threshold: float = None,
-                       background_threshold: float = None, mode: str = None, name: str = None) -> dict:
-
-        if pos_threshold is None: pos_threshold = self.pos_thresh
-        if name is None: name = preds.name
-
-        self.run_thresholds[name] = []
-
-        for thresh in thresholds:
-            run = self.evaluate(gt, preds, pos_threshold=thresh, background_threshold=background_threshold,
-                                mode=mode, name=name, use_for_errors=(pos_threshold == thresh))
-
-            self.run_thresholds[name].append(run)
-
-    def evaluate_length(self, gt: Data, preds: Data, seq_thresholds: list = SEQ_THRESHOLDS,
+    def evaluate_length(self, gt: TiveData, preds: TiveData, seq_thresholds: list = SEQ_THRESHOLDS,
                         thresholds: list = COCO_THRESHOLDS, pos_threshold: float = None,
                         background_threshold: float = None, mode: str = None, name: str = None) -> dict:
-        gt_short, gt_medium, gt_long = Data('short'), Data('medium'), Data('long')
-        preds_short, preds_medium, preds_long = Data('short'), Data('medium'), Data('long')
+        gt_short, gt_medium, gt_long = TiveData('short'), TiveData('medium'), TiveData('long')
+        preds_short, preds_medium, preds_long = TiveData('short'), TiveData('medium'), TiveData('long')
 
         # divide annos into short, medium, long
         for im_id in gt.images:
@@ -698,24 +521,6 @@ class TIDE:
         print('evaluating medium sequences')
         self.evaluate_range(gt_medium, preds_medium, thresholds, pos_threshold, background_threshold, mode, 'medium')
 
-    def add_qualifiers(self, *quals):
-        """
-        Applies any number of Qualifier objects to evaluations that have been run up to now.
-        See qualifiers.py for examples.
-        """
-        raise NotImplementedError('Qualifiers coming soon.')
-
-    # for q in quals:
-    # 	for run_name, run in self.runs.items():
-    # 		if run_name in self.run_thresholds:
-    # 			# If this was a threshold run, apply the qualifier for every run
-    # 			for trun in self.run_thresholds[run_name]:
-    # 				trun.apply_qualifier(q)
-    # 		else:
-    # 			# If this had no threshold, just apply it to the main run
-    # 			run.apply_qualifier(q)
-
-    # 	self.qualifiers[q.name] = q
 
     def summarize(self):
         """ Summarizes the mAP values and errors for all runs in this TIDE object. Results are printed to the console. """
@@ -803,10 +608,9 @@ class TIDE:
             if not os.path.exists(out_dir):
                 os.makedirs(out_dir)
 
-
         errors = self.get_all_errors()
 
-        if len(errors)==0:
+        if len(errors) == 0:
             return
 
         max_main_error = max(sum([list(x.values()) for x in errors['main'].values()], []))

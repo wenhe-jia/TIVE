@@ -1,13 +1,16 @@
+# Modified by Zilong Jia from https://github.com/dbolya/tide
 import os
 
 from collections import defaultdict
 import numpy as np
 import cv2
 
-from . import functions as f
+from tidecv import Data
+
+from tidecv import functions as f
 
 
-class Data:
+class TiveData(Data):
     """
     A class to hold ground truth or predictions data in an easy to work with format.
     Note that any time they appear, bounding boxes are [x, y, width, height] and masks
@@ -19,46 +22,9 @@ class Data:
     """
 
     def __init__(self, name: str, max_dets: int = 100):
-        self.name = name
-        self.max_dets = max_dets
+        super().__init__(name, max_dets)
 
-        self.classes = {}  # Maps class ID to class name
-        self.annotations = []  # Maps annotation ids to the corresponding annotation / prediction
-
-        # Maps an image id to an image name and a list of annotation ids
-        self.images = defaultdict(lambda: {'name': None, 'anns': []})
         self.video_lookup = None
-
-    def _get_ignored_classes(self, image_id: int) -> set:
-        anns = self.get(image_id)
-
-        classes_in_image = set()
-        ignored_classes = set()
-
-        for ann in anns:
-            if ann['ignore']:
-                if ann['class'] is not None and ann['bbox'] is None and ann['mask'] is None:
-                    ignored_classes.add(ann['class'])
-            else:
-                classes_in_image.add(ann['class'])
-
-        return ignored_classes.difference(classes_in_image)
-
-    def _make_default_class(self, id: int):
-        """ (For internal use) Initializes a class id with a generated name. """
-
-        if id not in self.classes:
-            self.classes[id] = 'Class ' + str(id)
-
-    def _make_default_image(self, id: int):
-        if self.images[id]['name'] is None:
-            self.images[id]['name'] = 'Image ' + str(id)
-
-    def _prepare_box(self, box: object):
-        return box
-
-    def _prepare_mask(self, mask: object):
-        return mask
 
     def _add(self, image_id: int, class_id: int, box: object = None, mask: object = None, score: float = 1,
              ignore: bool = False, gt_length: int = None):
@@ -101,14 +67,3 @@ class Data:
         """
         self._add(image_id, class_id, box, mask, ignore=True, gt_length=gt_length)
 
-    def add_class(self, id: int, name: str):
-        """ Register a class name to that class ID. """
-        self.classes[id] = name
-
-    def add_image(self, id: int, name: str):
-        """ Register an image name/path with an image ID. """
-        self.images[id]['name'] = name
-
-    def get(self, image_id: int):
-        """ Collects all the annotations / detections for that particular image. """
-        return [self.annotations[x] for x in self.images[image_id]['anns']]
