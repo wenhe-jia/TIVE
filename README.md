@@ -17,7 +17,7 @@ An easy-to-use, general toolbox to compute and evaluate the effect of video inst
 
 ## Installation
 
-TIVE is available as a python package for python 3.6+, based on [TIDE](https://github.com/dbolya/tide), we reimplemented specific modules for video instance segmentation. To install TIVE, simply install TIDE first with pip:
+TIVE is available as a python package for python 3.6+, based on [TIDE](https://github.com/dbolya/tide), we reimplemented specific modules for video instance segmentation. To get started with TIVE, simply install TIDE first with pip:
 
 ```shell
 pip3 install tidecv
