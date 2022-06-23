@@ -11,11 +11,12 @@ from collections import defaultdict, OrderedDict
 import numpy as np
 from typing import Union
 import os, math
+from tqdm import tqdm
 
 from tidecv.ap import ClassedAPDataObject
 from tidecv.errors.main_errors import *
 from tidecv.errors.qualifiers import Qualifier, AREA
-from tidecv.quantify import TIDE,TIDEExample,TIDERun
+from tidecv.quantify import TIDE, TIDEExample, TIDERun
 from tidecv import functions as f
 
 
@@ -27,7 +28,6 @@ class TIVEExample(TIDEExample):
         self.pred_ignore = [x for x in preds if x['ignore']]
         self.isvideo = isvideo
         super().__init__(preds, gt, pos_thresh, mode, max_dets, run_errors)
-
 
     def _run(self):
         preds = self.preds
@@ -188,13 +188,12 @@ class TIVERun(TIDERun):
 
         self.image_root = image_root
 
-        super().__init__(gt,preds,pos_thresh,bg_thresh,mode,max_dets,run_errors)
-
+        super().__init__(gt, preds, pos_thresh, bg_thresh, mode, max_dets, run_errors)
 
     def _run(self):
         """ And awaaay we go """
 
-        for image in self.gt.images:
+        for image in tqdm(self.gt.images, desc='evaluating thresh {}'.format(self.pos_thresh)):
             x = self.preds.get(image)
             y = self.gt.get(image)
 
@@ -217,8 +216,6 @@ class TIVERun(TIDERun):
 
         # Now that we've stored the fixed errors, we can clear the gt info
         self._clear()
-
-
 
     def _eval_image(self, preds: list, gt: list, image: int):
 
@@ -420,7 +417,7 @@ class TIVE(TIDE):
     def __init__(self, pos_threshold: float = 0.5, background_threshold: float = 0.1, mode: str = MASK,
                  isvideo: bool = False, frame_thr: float = 0.1, temporal_thr: float = 0.4,
                  image_root: str = None):
-        super().__init__(pos_threshold,background_threshold,mode)
+        super().__init__(pos_threshold, background_threshold, mode)
         self.isvideo = isvideo
         self.temporal_thr = temporal_thr
         self.frame_thr = frame_thr
@@ -448,79 +445,23 @@ class TIVE(TIDE):
 
         return run
 
-    def evaluate_length(self, gt: TiveData, preds: TiveData, seq_thresholds: list = SEQ_THRESHOLDS,
-                        thresholds: list = COCO_THRESHOLDS, pos_threshold: float = None,
-                        background_threshold: float = None, mode: str = None, name: str = None) -> dict:
-        gt_short, gt_medium, gt_long = TiveData('short'), TiveData('medium'), TiveData('long')
-        preds_short, preds_medium, preds_long = TiveData('short'), TiveData('medium'), TiveData('long')
-
-        # divide annos into short, medium, long
-        for im_id in gt.images:
-            annos = gt.get(im_id)
-            for _a in annos:
-                if _a['gt_length'] <= seq_thresholds[0]:
-                    if im_id not in gt_short.images:
-                        gt_short.add_image(im_id, gt.images[im_id]['name'])
-                    gt_short._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'],
-                                  _a['gt_length'])
-                else:
-                    gt_short._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
-
-                if seq_thresholds[1] >= _a['gt_length'] > seq_thresholds[0]:
-                    if im_id not in gt_medium.images:
-                        gt_medium.add_image(im_id, gt.images[im_id]['name'])
-                    gt_medium._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'],
-                                   _a['gt_length'])
-                else:
-                    gt_medium._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
-
-                if _a['gt_length'] > seq_thresholds[1]:
-                    if im_id not in gt_long.images:
-                        gt_long.add_image(im_id, gt.images[im_id]['name'])
-                    gt_long._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'], _a['gt_length'])
-                else:
-                    gt_long._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
-
-        # divide detections into short, medium, long
-        for im_id in preds.images:
-            annos = preds.get(im_id)
-            for _a in annos:
-                if _a['gt_length'] <= seq_thresholds[0]:
-                    if im_id not in preds_short.images:
-                        preds_short.add_image(im_id, preds.images[im_id]['name'])
-                    preds_short._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'],
-                                     _a['gt_length'])
-                else:
-                    preds_short._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
-
-                if seq_thresholds[1] >= _a['gt_length'] > seq_thresholds[0]:
-                    if im_id not in preds_medium.images:
-                        preds_medium.add_image(im_id, preds.images[im_id]['name'])
-                    preds_medium._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'],
-                                      _a['gt_length'])
-                else:
-                    preds_medium._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
-
-                if _a['gt_length'] > seq_thresholds[1]:
-                    if im_id not in preds_long.images:
-                        preds_long.add_image(im_id, preds.images[im_id]['name'])
-                    preds_long._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'],
-                                    _a['gt_length'])
-                else:
-                    preds_long._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
+    def evaluate_all(self, gt: TiveData, preds: TiveData, seq_thresholds: list = SEQ_THRESHOLDS,
+                     thresholds: list = COCO_THRESHOLDS, pos_threshold: float = None,
+                     background_threshold: float = None, mode: str = None, name: str = None) -> dict:
+        gt_short, gt_medium, gt_long = self.divide_sequence(gt, seq_thresholds)
+        preds_short, preds_medium, preds_long = self.divide_sequence(preds, seq_thresholds)
 
         # evaluate
         # first evaluate all gts and detections
-        print('evaluating all gts and detections')
+        print('=' * 40 + 'evaluating all gts and detections' + '=' * 40)
         self.evaluate_range(gt, preds, thresholds, pos_threshold, background_threshold, mode, name)
-        # evaluate on long ,short, medium
-        print('evaluating long sequences')
-        self.evaluate_range(gt_long, preds_long, thresholds, pos_threshold, background_threshold, mode, 'long')
-        print('evaluating short sequences')
+        # evaluate on short, medium, long
+        print('=' * 40 + 'evaluating short sequences' + '=' * 40)
         self.evaluate_range(gt_short, preds_short, thresholds, pos_threshold, background_threshold, mode, 'short')
-        print('evaluating medium sequences')
+        print('=' * 40 + 'evaluating medium sequences' + '=' * 40)
         self.evaluate_range(gt_medium, preds_medium, thresholds, pos_threshold, background_threshold, mode, 'medium')
-
+        print('=' * 40 + 'evaluating long sequences' + '=' * 40)
+        self.evaluate_range(gt_long, preds_long, thresholds, pos_threshold, background_threshold, mode, 'long')
 
     def summarize(self):
         """ Summarizes the mAP values and errors for all runs in this TIDE object. Results are printed to the console. """
@@ -661,14 +602,35 @@ class TIVE(TIDE):
 
         return errors
 
-    def get_all_errors(self):
-        """
-        returns {
-            'main'   : { run_name: { error_name: float } },
-            'special': { run_name: { error_name: float } },
-        }
-        """
-        return {
-            'main': self.get_main_errors(),
-            'special': self.get_special_errors()
-        }
+    def divide_sequence(self, data_in: TiveData, seq_thresholds):
+        data_short, data_medium, data_long = TiveData('short'), TiveData('medium'), TiveData('long')
+
+        # divide annos or detections into short, medium, long
+        for im_id in data_in.images:
+            annos = data_in.get(im_id)
+            for _a in annos:
+                if _a['gt_length'] <= seq_thresholds[0]:
+                    if im_id not in data_short.images:
+                        data_short.add_image(im_id, data_in.images[im_id]['name'])
+                    data_short._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'],
+                                    _a['gt_length'])
+                else:
+                    data_short._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
+
+                if seq_thresholds[1] >= _a['gt_length'] > seq_thresholds[0]:
+                    if im_id not in data_medium.images:
+                        data_medium.add_image(im_id, data_in.images[im_id]['name'])
+                    data_medium._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'],
+                                     _a['gt_length'])
+                else:
+                    data_medium._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
+
+                if _a['gt_length'] > seq_thresholds[1]:
+                    if im_id not in data_long.images:
+                        data_long.add_image(im_id, data_in.images[im_id]['name'])
+                    data_long._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'],
+                                   _a['gt_length'])
+                else:
+                    data_long._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
+
+        return data_short, data_medium, data_long

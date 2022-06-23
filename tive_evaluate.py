@@ -19,7 +19,7 @@ image_root = None
 tive = TIVE(isvideo=True, image_root=image_root)
 
 # tide.evaluate_range(gt, mask_results, mode=TIDE.MASK)
-tive.evaluate_length(gt, mask_results, mode=TIVE.MASK)
+tive.evaluate_all(gt, mask_results, mode=TIVE.MASK)
 
 tive.summarize()
 tive.plot(out_dir='./tive_output')
