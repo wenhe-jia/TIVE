@@ -57,7 +57,7 @@ This prints evaluation summary tables to the console:
 
 And a summary plot for your model's errors:
 
-![A summary plot]()(need to be updated)
+![A summary plot](https://github.com/wenhe-jia/TIVE/blob/main/tive_output/results_mask_summary.png)(need to be updated)
 
 
 ## Citation
