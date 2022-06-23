@@ -13,7 +13,7 @@ By **Wenhe Jia**, **Lu Yang**, **Zilong Jia**, **Qing Song**
 
 An easy-to-use, general toolbox to compute and evaluate the effect of video instance segmentation on overall performance. 
 
-([ArXiv]())need to be updated .
+[ArXiv]()(need to be updated).
 
 ## Installation
 
@@ -23,8 +23,15 @@ TIVE is available as a python package for python 3.6+, based on [TIDE](https://g
 pip3 install tidecv
 ```
 
+
+## Datasets
+
+The currently supported YouTube-VIS dataset. json file for YouTubeVIS-2021 `mini_train` and `minival` can be found in [YouTubeVIS-2021-minitrain/minival]()(need to be updated). To evaluate on other common VIS datasets, you need to convert your dataset's format same as YouTube-VIS.
+
+
 ## Get Started
-TIDE is meant as a drop-in replacement for the [YouTubeVIS Evaluation toolkit]([https://github.com/youtubevos/cocoapi]), get detailed evaluation results on YoutubeVIS-2021-minival subset:
+
+TIVE is meant as a drop-in replacement for the [YouTubeVIS Evaluation toolkit]([https://github.com/youtubevos/cocoapi]), get detailed evaluation results on YoutubeVIS-2021-minival subset:
 
 ```python
 from tivecv import TIVE
@@ -44,7 +51,7 @@ tive.plot(out_dir='./tive_output')
 This prints evaluation summary tables to the console:
 ```
 
-need to be updated
+(need to be updated)
 
 ```
 
@@ -53,10 +60,8 @@ And a summary plot for your model's errors:
 ![A summary plot]()(need to be updated)
 
 
-## Datasets
-The currently supported YouTube-VIS dataset. To evaluate on other common VIS datasets, you need to convert your dataset's format same as YouTube-VIS.
-
 ## Citation
+
 If you use TIVE in your project, please cite
 ```
 @inproceedings{jia2022tive,
@@ -66,6 +71,7 @@ If you use TIVE in your project, please cite
   year      = {2022},
 }
 ```
+
 
 ## Acknowledgement
 
