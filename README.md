@@ -1,6 +1,5 @@
 # A General **T**oolbox for **I**dentifying **V**ideo Instance Segmentation **E**rrors
 
-By **Wenhe Jia**, **Lu Yang**, **Zilong Jia**, **Qing Song**
 
 ```
 ████████╗██╗██╗   ██╗███████╗
