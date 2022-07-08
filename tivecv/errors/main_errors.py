@@ -23,7 +23,7 @@ class SpatialBadError(Error):
 
 class TemporalBadError(Error):
     description = "Error caused when a prediction would have been marked positive if it was localized better."
-    short_name = "Tempo"
+    short_name = "Temp"
 
     def __init__(self, pred: dict, gt: dict,ex):
         self.pred = pred
