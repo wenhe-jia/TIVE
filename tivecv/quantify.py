@@ -482,10 +482,6 @@ class TIVE(TIDE):
                                                         int(thresh_runs[-1].pos_thresh * 100))
                 print('{:s}: {:.2f}'.format(ap_title, sum(aps) / len(aps)))
 
-                if run_name in ['long', 'medium', 'short']:
-                    print()
-                    continue
-
                 # Print AP for every threshold on a threshold run
                 P.print_table([
                     ['Thresh'] + [str(int(trun.pos_thresh * 100)) for trun in thresh_runs],
@@ -566,41 +562,8 @@ class TIVE(TIDE):
 
         # Do the plotting now
         for run_name, run in self.runs.items():
-            if run_name in ['long', 'medium', 'short']:
-                continue
             self.plotter.make_summary_plot(out_dir, errors, run_name, run.mode, hbar_names=True)
 
-    def get_main_errors(self):
-        errors = {}
-
-        for run_name, run in self.runs.items():
-            if run_name in ['long', 'medium', 'short']:
-                continue
-            if run_name in self.run_main_errors:
-                errors[run_name] = self.run_main_errors[run_name]
-            else:
-                errors[run_name] = {
-                    error.short_name: value
-                    for error, value in run.fix_main_errors().items()
-                }
-
-        return errors
-
-    def get_special_errors(self):
-        errors = {}
-
-        for run_name, run in self.runs.items():
-            if run_name in ['long', 'medium', 'short']:
-                continue
-            if run_name in self.run_special_errors:
-                errors[run_name] = self.run_special_errors[run_name]
-            else:
-                errors[run_name] = {
-                    error.short_name: value
-                    for error, value in run.fix_special_errors().items()
-                }
-
-        return errors
 
     def divide_sequence(self, data_in: TiveData, seq_thresholds):
         data_short, data_medium, data_long = TiveData('short'), TiveData('medium'), TiveData('long')
