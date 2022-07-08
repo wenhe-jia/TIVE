@@ -39,7 +39,7 @@ class TemporalBadError(Error):
 
 class VideoOtherError(Error):
     description = "This detection didn't fall into any of the other error categories."
-    short_name = "Other"
+    short_name = "Both"
 
     def __init__(self, pred: dict):
         self.pred = pred
