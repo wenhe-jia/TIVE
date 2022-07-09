@@ -398,8 +398,8 @@ class TIVE(TIDE):
 
     # This is just here to define a consistent order of the error types
 
-    _error_types_video = [ClassError, DuplicateError, SpatialBadError, TemporalBadError, BackgroundError, MissedError,
-                          VideoOtherError]
+    _error_types_video = [ClassError, DuplicateError, SpatialBadError, TemporalBadError, VideoOtherError,BackgroundError,
+                          MissedError]
     _error_types = [ClassError, BoxError, OtherError, DuplicateError, BackgroundError, MissedError]
     _special_error_types = [FalsePositiveError, FalseNegativeError]
 

@@ -42,9 +42,10 @@ class TivePlotter(Plotter):
                 DuplicateError.short_name: current_palette[6],
                 SpatialBadError.short_name: current_palette[8],
                 TemporalBadError.short_name: current_palette[2],
+                VideoOtherError.short_name: current_palette[7],
                 BackgroundError.short_name: current_palette[4],
                 MissedError.short_name: current_palette[3],
-                VideoOtherError.short_name: current_palette[7],
+
             })
 
     def make_summary_plot(self, out_dir: str, errors: dict, model_name: str, rec_type: str, hbar_names: bool = False):
