@@ -1,4 +1,5 @@
 # Modified by Zilong Jia from https://github.com/dbolya/tide
+import math
 import sys
 from collections import defaultdict, OrderedDict
 import os
@@ -35,7 +36,7 @@ class TivePlotter(Plotter):
 
         # Seaborn style
         sns.set(style="whitegrid")
-        
+
         if self.isvideo:
             self.colors_main = OrderedDict({
                 ClassError.short_name: current_palette[9],
@@ -95,7 +96,7 @@ class TivePlotter(Plotter):
         sns.barplot(data=error_dfs['main'], x='Delta mAP', y='Error Type', ax=ax,
                     palette=self.colors_main.values())
 
-        ax.xaxis.set_major_locator(MultipleLocator(int(self.MAX_MAIN_DELTA_AP / 4 + 1)))
+        ax.xaxis.set_major_locator(MultipleLocator(math.ceil(self.MAX_MAIN_DELTA_AP / 5)))
         ax.set_xlim(0, self.MAX_MAIN_DELTA_AP, auto=True)
         ax.set_xlabel('')
         ax.set_ylabel('')
@@ -135,7 +136,7 @@ class TivePlotter(Plotter):
         # summary_im = np.concatenate([np.zeros((vbar_im.shape[0] - hbar_im.shape[0], hbar_im.shape[1], 3)) + 255, hbar_im],
         #                          axis=0)
         # summary_im = np.concatenate([hbar_im, vbar_im], axis=1)
-        summary_im=hbar_im
+        summary_im = hbar_im
 
         # pad summary_im
         if summary_im.shape[1] < pie_im.shape[1]:
