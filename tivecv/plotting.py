@@ -38,14 +38,25 @@ class TivePlotter(Plotter):
         sns.set(style="whitegrid")
 
         if self.isvideo:
+            # self.colors_main = OrderedDict({
+            #     ClassError.short_name: current_palette[9],
+            #     DuplicateError.short_name: current_palette[6],
+            #     SpatialBadError.short_name: current_palette[8],
+            #     TemporalBadError.short_name: current_palette[2],
+            #     VideoOtherError.short_name: current_palette[7],
+            #     BackgroundError.short_name: current_palette[4],
+            #     MissedError.short_name: current_palette[3],
+            #
+            # })
+
             self.colors_main = OrderedDict({
-                ClassError.short_name: current_palette[9],
-                DuplicateError.short_name: current_palette[6],
-                SpatialBadError.short_name: current_palette[8],
-                TemporalBadError.short_name: current_palette[2],
-                VideoOtherError.short_name: current_palette[7],
-                BackgroundError.short_name: current_palette[4],
-                MissedError.short_name: current_palette[3],
+                ClassError.short_name: '#FFD804',
+                DuplicateError.short_name: '#04BCDC',
+                SpatialBadError.short_name: '#8EE697',
+                TemporalBadError.short_name: '#FE7B72',
+                VideoOtherError.short_name: '#02C39A',
+                BackgroundError.short_name: '#FBA3D3',
+                MissedError.short_name: '#A5B1F8',
 
             })
 
