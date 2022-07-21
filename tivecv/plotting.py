@@ -50,14 +50,13 @@ class TivePlotter(Plotter):
             # })
 
             self.colors_main = OrderedDict({
-                ClassError.short_name: '#FFD804',
-                DuplicateError.short_name: '#04BCDC',
-                SpatialBadError.short_name: '#8EE697',
-                TemporalBadError.short_name: '#FE7B72',
-                VideoOtherError.short_name: '#02C39A',
-                BackgroundError.short_name: '#FBA3D3',
-                MissedError.short_name: '#A5B1F8',
-
+                ClassError.short_name: '#FACE32',
+                DuplicateError.short_name: '#9670BA',
+                SpatialBadError.short_name: '#80BA0E',
+                TemporalBadError.short_name: '#E75D6D',
+                VideoOtherError.short_name: '#019E97',
+                BackgroundError.short_name: '#FDA632',
+                MissedError.short_name: '#6796F4',
             })
 
     def make_summary_plot(self, out_dir: str, errors: dict, model_name: str, rec_type: str, hbar_names: bool = False):
