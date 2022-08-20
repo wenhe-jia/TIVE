@@ -181,12 +181,13 @@ class TIVERun(TIDERun):
 
     def __init__(self, gt: TiveData, preds: TiveData, pos_thresh: float, bg_thresh: float, mode: str, max_dets: int,
                  run_errors: bool = True, isvideo: bool = False, frame_thr: float = 0.1, temporal_thr: float = 0.4,
-                 image_root: str = None):
+                 image_root: str = None, visualize_root: str = None):
         self.isvideo = isvideo
         self.temporal_thr = temporal_thr
         self.frame_thr = frame_thr
 
         self.image_root = image_root
+        self.visualize_root = visualize_root
 
         super().__init__(gt, preds, pos_thresh, bg_thresh, mode, max_dets, run_errors)
 
@@ -238,8 +239,7 @@ class TIVERun(TIDERun):
         preds = ex.preds  # In case the number of predictions was restricted to the max
 
         visualizer = Visualizer(ex, image, self.gt.images[image]['name'], self.image_root,
-                                # save_root='./visualize_output')
-                                save_root=r'E:\AAAAAAAAAAAAAAAAA\visualize_mtr')
+                                save_root=self.visualize_root)
 
         for pred_idx, pred in enumerate(preds):
 
@@ -269,41 +269,35 @@ class TIVERun(TIDERun):
                     if self.bg_thresh <= ex.gt_cls_iou[pred_idx, idx] <= self.pos_thresh:
                         # calucate per frame iou
 
-                        gt_pred = ex.gt[idx]
+                        gt_matched = ex.gt[idx]
 
-                        # gt_pred dict_keys(['_id', 'score', 'image', 'class', 'bbox', 'mask', 'ignore', 'used', 'usable', '_idx',
-                        #           'matched_with'])
-                        # pred dict_keys(
-                        #    ['_id', 'score', 'image', 'class', 'bbox', 'mask', 'ignore', 'used', '_idx', 'iou', 'info'])
-
-                        frame_gt_iou = np.zeros(len(pred['mask']))
+                        frame_iou = np.zeros(len(pred['mask']))
                         gt_len = pr_len = 0
-                        for _i, (_pr, _prgt) in enumerate(zip(pred['mask'], gt_pred['mask'])):
+                        for _i, (_pr, _gt) in enumerate(zip(pred['mask'], gt_matched['mask'])):
                             if _pr != None:
                                 pr_mask = np.any(mask_utils.decode(_pr))
                             else:
                                 pr_mask = False
 
-                            if _prgt == None and not pr_mask:
+                            if _gt == None and not pr_mask:
                                 # gt and pred both have no mask
                                 tmp_fiou = 0.0
-                            elif _prgt == None and pr_mask:
+                            elif _gt == None and pr_mask:
                                 # gt has no mask and pred has mask
                                 tmp_fiou = 0.0
                                 pr_len += 1
-                            elif _prgt != None and not pr_mask:
+                            elif _gt != None and not pr_mask:
                                 # gt has mask and pred has no mask
                                 tmp_fiou = 0.0
                                 gt_len += 1
                             else:
                                 # gt and prd both have mask
-                                tmp_fiou = mask_utils.iou([_pr], [_prgt], [False])
+                                tmp_fiou = mask_utils.iou([_pr], [_gt], [False])
                                 gt_len += 1
-                                pr_len += 1
 
-                            frame_gt_iou[_i] = tmp_fiou
+                            frame_iou[_i] = tmp_fiou
                         temporal_good = 0
-                        for _iou in frame_gt_iou:
+                        for _iou in frame_iou:
                             if _iou > self.frame_thr:
                                 temporal_good += 1
 
@@ -314,7 +308,6 @@ class TIVERun(TIDERun):
                         if temporal_overlap >= self.temporal_thr:
                             self._add_error(SpatialBadError(pred, ex.gt[idx], ex))
                             visualizer.draw(pred, SpatialBadError.short_name)
-
                             continue
 
                         # Test for TemporalBadError
@@ -324,7 +317,6 @@ class TIVERun(TIDERun):
                         else:
                             self._add_error(TemporalBadError(pred, ex.gt[idx], ex))
                             visualizer.draw(pred, TemporalBadError.short_name)
-
                             continue
 
                 # Test for ClassError
@@ -398,7 +390,8 @@ class TIVE(TIDE):
 
     # This is just here to define a consistent order of the error types
 
-    _error_types_video = [ClassError, DuplicateError, SpatialBadError, TemporalBadError, VideoOtherError,BackgroundError,
+    _error_types_video = [ClassError, DuplicateError, SpatialBadError, TemporalBadError, VideoOtherError,
+                          BackgroundError,
                           MissedError]
     _error_types = [ClassError, BoxError, OtherError, DuplicateError, BackgroundError, MissedError]
     _special_error_types = [FalsePositiveError, FalseNegativeError]
@@ -408,7 +401,7 @@ class TIVE(TIDE):
     VOL_THRESHOLDS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
     # Threshold splits for different length for sequence
-    SEQ_THRESHOLDS = [16, 32]  # [16, 32]
+    SEQ_THRESHOLDS = [16, 32]
 
     # The modes of evaluation
     BOX = 'bbox'
@@ -416,13 +409,14 @@ class TIVE(TIDE):
 
     def __init__(self, pos_threshold: float = 0.5, background_threshold: float = 0.1, mode: str = MASK,
                  isvideo: bool = False, frame_thr: float = 0.1, temporal_thr: float = 0.4,
-                 image_root: str = None):
+                 image_root: str = None, visualize_root: str = None):
         super().__init__(pos_threshold, background_threshold, mode)
         self.isvideo = isvideo
         self.temporal_thr = temporal_thr
         self.frame_thr = frame_thr
         # if image root not None ,save the visualize output
         self.image_root = image_root
+        self.visualize_root = visualize_root
 
         if self.isvideo:
             TIVE._error_types = TIVE._error_types_video
@@ -438,7 +432,7 @@ class TIVE(TIDE):
         name = preds.name if name is None else name
 
         run = TIVERun(gt, preds, pos_thresh, bg_thresh, mode, gt.max_dets, use_for_errors,
-                      self.isvideo, self.frame_thr, self.temporal_thr, self.image_root)
+                      self.isvideo, self.frame_thr, self.temporal_thr, self.image_root, self.visualize_root)
 
         if use_for_errors:
             self.runs[name] = run
@@ -563,7 +557,6 @@ class TIVE(TIDE):
         # Do the plotting now
         for run_name, run in self.runs.items():
             self.plotter.make_summary_plot(out_dir, errors, run_name, run.mode, hbar_names=True)
-
 
     def divide_sequence(self, data_in: TiveData, seq_thresholds):
         data_short, data_medium, data_long = TiveData('short'), TiveData('medium'), TiveData('long')

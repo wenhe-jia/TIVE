@@ -105,7 +105,6 @@ def draw_information(im_in1, insid, is_gt=False):
 
     im_in = copy.deepcopy(im_in1)
     # BGR for three bad cases
-    # colors = [[255, 0, 0], [0, 255, 0], [0, 0, 255]]
     if is_gt:
         color = (255, 105, 65)
     else:
@@ -120,7 +119,7 @@ def draw_information(im_in1, insid, is_gt=False):
         text_height = size[0][1]
 
         im_in[y:text_height + margin + y, :text_width + margin, :] = np.array(
-            [220, 220, 220])  # np.zeros((10,10,3))
+            [220, 220, 220])
 
         x = margin
         if _nt == 0:
@@ -188,6 +187,7 @@ class Visualizer:
     # draw instance prediction by errortype
     def draw(self, pred, error_type):
         if self.image_root != None:
+            assert self.save_root ,"Please specify the save path"
 
             if error_type != 'Miss':
                 print('--processing video:', self.video_id, '  prediction:', pred['_id'], '  save type:', error_type)
@@ -215,9 +215,8 @@ class Visualizer:
 
             alpha = 0.5
 
-            # print('get masks')
 
-            masks = [None, None]  # [gt_mask,dt_mask]
+            masks = [None, None]
             if error_type == 'Miss':
                 masks[0] = self.ex.gt[pred]['mask']
                 txt_gt = ['gt_id:' + str(self.ex.gt[pred]['_id']),
@@ -236,7 +235,6 @@ class Visualizer:
                 txt_pred = ['label:' + YTVIS_CATEGORIES_2021[pred['class']], 'iou:' + str(round(pred['iou'], 2)),
                             'score:' + str(round(pred['score'], 2))]
 
-            # print('drawing')
             # get masks and dets
             if masks[0] != None:
                 gtmask = []
@@ -261,7 +259,6 @@ class Visualizer:
                     dtmask.append(draw_information(dtm, txt_pred))
                 masks[1] = dtmask
 
-            # print('saving')
             # save images
             final_imgs = []
 
