@@ -4,17 +4,14 @@ sys.path.append("..")
 from tivecv import TIVE
 import tivecv.datasets as datasets
 
+# load ytvis style annotation and result json files
 gt = datasets.YTVIS2021(path='path/to/annotation')
-
 mask_results = datasets.YTVIS2021Result(path='path/to/result')
 
-# image_root = 'root/to/images'
-# if image_root is None ,we won't store the vislualize results
-image_root = None
-tive = TIVE(isvideo=True, image_root=image_root, visualize_root="/path/to/store/visualize_image")
+# if you want to visualize the predictions,
+# set image_root = 'root/to/images' and visualize_root='/path/to/store/visualize_image'
+tive = TIVE(isvideo=True, image_root=None, visualize_root=None)
 
-# tide.evaluate_range(gt, mask_results, mode=TIDE.MASK)
-tive.evaluate_all(gt, mask_results, mode=TIVE.MASK)
-
+tive.evaluate_all(gt, mask_results, mode=TIVE.MASK, seq_range=TIVE.YTVIS_SEQ_RANGE)
 tive.summarize()
 tive.plot(out_dir='./tive_output')

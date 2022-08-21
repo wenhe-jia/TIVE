@@ -1,5 +1,4 @@
 # Modified by Zilong Jia from https://github.com/dbolya/tide
-import sys
 
 from .data import TiveData
 from .errors.main_errors import *
@@ -7,15 +6,10 @@ from .visualizer import Visualizer
 from . import plotting as P
 
 from pycocotools import mask as mask_utils
-from collections import defaultdict, OrderedDict
-import numpy as np
-from typing import Union
 import os, math
 from tqdm import tqdm
 
-from tidecv.ap import ClassedAPDataObject
 from tidecv.errors.main_errors import *
-from tidecv.errors.qualifiers import Qualifier, AREA
 from tidecv.quantify import TIDE, TIDEExample, TIDERun
 from tidecv import functions as f
 
@@ -180,11 +174,11 @@ class TIVERun(TIDERun):
     """ Holds the data for a single run of TIDE. """
 
     def __init__(self, gt: TiveData, preds: TiveData, pos_thresh: float, bg_thresh: float, mode: str, max_dets: int,
-                 run_errors: bool = True, isvideo: bool = False, frame_thr: float = 0.1, temporal_thr: float = 0.4,
+                 run_errors: bool = True, isvideo: bool = False, spatial_thr: float = 0.1, temporal_thr: float = 0.4,
                  image_root: str = None, visualize_root: str = None):
         self.isvideo = isvideo
         self.temporal_thr = temporal_thr
-        self.frame_thr = frame_thr
+        self.spatial_thr = spatial_thr
 
         self.image_root = image_root
         self.visualize_root = visualize_root
@@ -257,14 +251,13 @@ class TIVERun(TIDERun):
             if self.run_errors and (pred['used'] == False or pred['used'] == None):
                 # Test for BackgroundError
                 if len(ex.gt) == 0:  # Note this is ex.gt because it doesn't include ignore annotations
-                    # There is no ground truth for this image, so just mark everything as BackgroundError
+                    # There is no ground truth for this video/image, so just mark everything as BackgroundError
                     self._add_error(BackgroundError(pred))
                     visualizer.draw(pred, BackgroundError.short_name)
                     continue
 
                 # errors only for video
                 if self.isvideo:
-
                     idx = ex.gt_cls_iou[pred_idx, :].argmax()
                     if self.bg_thresh <= ex.gt_cls_iou[pred_idx, idx] <= self.pos_thresh:
                         # calucate per frame iou
@@ -272,7 +265,7 @@ class TIVERun(TIDERun):
                         gt_matched = ex.gt[idx]
 
                         frame_iou = np.zeros(len(pred['mask']))
-                        gt_len = pr_len = 0
+                        temp_union = 0
                         for _i, (_pr, _gt) in enumerate(zip(pred['mask'], gt_matched['mask'])):
                             if _pr != None:
                                 pr_mask = np.any(mask_utils.decode(_pr))
@@ -281,39 +274,35 @@ class TIVERun(TIDERun):
 
                             if _gt == None and not pr_mask:
                                 # gt and pred both have no mask
-                                tmp_fiou = 0.0
+                                fiou = 0.0
                             elif _gt == None and pr_mask:
                                 # gt has no mask and pred has mask
-                                tmp_fiou = 0.0
-                                pr_len += 1
+                                fiou = 0.0
+                                temp_union += 1
                             elif _gt != None and not pr_mask:
                                 # gt has mask and pred has no mask
-                                tmp_fiou = 0.0
-                                gt_len += 1
+                                fiou = 0.0
+                                temp_union += 1
                             else:
-                                # gt and prd both have mask
-                                tmp_fiou = mask_utils.iou([_pr], [_gt], [False])
-                                gt_len += 1
+                                # gt and pred both have mask
+                                fiou = mask_utils.iou([_pr], [_gt], [False])
+                                temp_union += 1
+                            frame_iou[_i] = fiou
 
-                            frame_iou[_i] = tmp_fiou
-                        temporal_good = 0
+                        temp_intersect = 0
                         for _iou in frame_iou:
-                            if _iou > self.frame_thr:
-                                temporal_good += 1
+                            if _iou > self.spatial_thr:
+                                temp_intersect += 1
 
-                        temporal_overlap = temporal_good / (gt_len + pr_len)
+                        temporal_overlap = temp_intersect / temp_union
 
                         # Test for SpatialBadError
-                        # This detection would have been positive if it had higher IoU with this GT
                         if temporal_overlap >= self.temporal_thr:
                             self._add_error(SpatialBadError(pred, ex.gt[idx], ex))
                             visualizer.draw(pred, SpatialBadError.short_name)
                             continue
 
                         # Test for TemporalBadError
-
-                        # This detection would have been positive if it had higher IoU with this GT
-                        # if temporal_overlap < self.temporal_thr:
                         else:
                             self._add_error(TemporalBadError(pred, ex.gt[idx], ex))
                             visualizer.draw(pred, TemporalBadError.short_name)
@@ -400,20 +389,21 @@ class TIVE(TIDE):
     COCO_THRESHOLDS = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
     VOL_THRESHOLDS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
-    # Threshold splits for different length for sequence
-    SEQ_THRESHOLDS = [16, 32]
+    # Threshold splits for different sequence temporal ranges
+    YTVIS_SEQ_RANGE = [16, 32]
+
 
     # The modes of evaluation
     BOX = 'bbox'
     MASK = 'mask'
 
     def __init__(self, pos_threshold: float = 0.5, background_threshold: float = 0.1, mode: str = MASK,
-                 isvideo: bool = False, frame_thr: float = 0.1, temporal_thr: float = 0.4,
+                 isvideo: bool = False, spatial_thr: float = 0.1, temporal_thr: float = 0.7,
                  image_root: str = None, visualize_root: str = None):
         super().__init__(pos_threshold, background_threshold, mode)
         self.isvideo = isvideo
         self.temporal_thr = temporal_thr
-        self.frame_thr = frame_thr
+        self.spatial_thr = spatial_thr
         # if image root not None ,save the visualize output
         self.image_root = image_root
         self.visualize_root = visualize_root
@@ -432,28 +422,30 @@ class TIVE(TIDE):
         name = preds.name if name is None else name
 
         run = TIVERun(gt, preds, pos_thresh, bg_thresh, mode, gt.max_dets, use_for_errors,
-                      self.isvideo, self.frame_thr, self.temporal_thr, self.image_root, self.visualize_root)
+                      self.isvideo, self.spatial_thr, self.temporal_thr, self.image_root, self.visualize_root)
 
         if use_for_errors:
             self.runs[name] = run
 
         return run
 
-    def evaluate_all(self, gt: TiveData, preds: TiveData, seq_thresholds: list = SEQ_THRESHOLDS,
+    def evaluate_all(self, gt: TiveData, preds: TiveData, seq_range: list = YTVIS_SEQ_RANGE,
                      thresholds: list = COCO_THRESHOLDS, pos_threshold: float = None,
                      background_threshold: float = None, mode: str = None, name: str = None) -> dict:
-        gt_short, gt_medium, gt_long = self.divide_sequence(gt, seq_thresholds)
-        preds_short, preds_medium, preds_long = self.divide_sequence(preds, seq_thresholds)
+        gt_short, gt_medium, gt_long = self.divide_sequence(gt, seq_range)
+        preds_short, preds_medium, preds_long = self.divide_sequence(preds, seq_range)
 
         # evaluate
-        # first evaluate all gts and detections
+        # evaluate all gts and detections
         print('=' * 40 + 'evaluating all gts and detections' + '=' * 40)
         self.evaluate_range(gt, preds, thresholds, pos_threshold, background_threshold, mode, name)
-        # evaluate on short, medium, long
+        # evaluate short
         print('=' * 40 + 'evaluating short sequences' + '=' * 40)
         self.evaluate_range(gt_short, preds_short, thresholds, pos_threshold, background_threshold, mode, 'short')
+        # evaluate medium
         print('=' * 40 + 'evaluating medium sequences' + '=' * 40)
         self.evaluate_range(gt_medium, preds_medium, thresholds, pos_threshold, background_threshold, mode, 'medium')
+        # evaluate long
         print('=' * 40 + 'evaluating long sequences' + '=' * 40)
         self.evaluate_range(gt_long, preds_long, thresholds, pos_threshold, background_threshold, mode, 'long')
 
