@@ -55,18 +55,12 @@ class TIVEExample(TIDEExample):
 
         # IoU is [len(detections), len(gt)]
 
-        if self.isvideo:
-            self.gt_iou = np.zeros((len(detections), len(gt)))
-            for dind, di in enumerate(detections):
-                for gind, gi in enumerate([x[det_type] for x in gt]):
-                    self.gt_iou[dind, gind] = iou_seq(di, gi)
 
-        else:
+        self.gt_iou = np.zeros((len(detections), len(gt)))
+        for dind, di in enumerate(detections):
+            for gind, gi in enumerate([x[det_type] for x in gt]):
+                self.gt_iou[dind, gind] = iou_seq(di, gi)
 
-            self.gt_iou = mask_utils.iou(
-                detections,
-                [x[det_type] for x in gt],
-                [False] * len(gt))
 
         # Store whether a prediction / gt got used in their data list
         # Note: this is set to None if ignored, keep that in mind
@@ -256,57 +250,55 @@ class TIVERun(TIDERun):
                     visualizer.draw(pred, BackgroundError.short_name)
                     continue
 
-                # errors only for video
-                if self.isvideo:
-                    idx = ex.gt_cls_iou[pred_idx, :].argmax()
-                    if self.bg_thresh <= ex.gt_cls_iou[pred_idx, idx] <= self.pos_thresh:
-                        # calucate per frame iou
+                idx = ex.gt_cls_iou[pred_idx, :].argmax()
+                if self.bg_thresh <= ex.gt_cls_iou[pred_idx, idx] <= self.pos_thresh:
+                    # calucate per frame iou
 
-                        gt_matched = ex.gt[idx]
+                    gt_matched = ex.gt[idx]
 
-                        frame_iou = np.zeros(len(pred['mask']))
-                        temp_union = 0
-                        for _i, (_pr, _gt) in enumerate(zip(pred['mask'], gt_matched['mask'])):
-                            if _pr != None:
-                                pr_mask = np.any(mask_utils.decode(_pr))
-                            else:
-                                pr_mask = False
-
-                            if _gt == None and not pr_mask:
-                                # gt and pred both have no mask
-                                fiou = 0.0
-                            elif _gt == None and pr_mask:
-                                # gt has no mask and pred has mask
-                                fiou = 0.0
-                                temp_union += 1
-                            elif _gt != None and not pr_mask:
-                                # gt has mask and pred has no mask
-                                fiou = 0.0
-                                temp_union += 1
-                            else:
-                                # gt and pred both have mask
-                                fiou = mask_utils.iou([_pr], [_gt], [False])
-                                temp_union += 1
-                            frame_iou[_i] = fiou
-
-                        temp_intersect = 0
-                        for _iou in frame_iou:
-                            if _iou > self.spatial_thr:
-                                temp_intersect += 1
-
-                        temporal_overlap = temp_intersect / temp_union
-
-                        # Test for SpatialBadError
-                        if temporal_overlap >= self.temporal_thr:
-                            self._add_error(SpatialBadError(pred, ex.gt[idx], ex))
-                            visualizer.draw(pred, SpatialBadError.short_name)
-                            continue
-
-                        # Test for TemporalBadError
+                    frame_iou = np.zeros(len(pred['mask']))
+                    temp_union = 0
+                    for _i, (_pr, _gt) in enumerate(zip(pred['mask'], gt_matched['mask'])):
+                        if _pr != None:
+                            pr_mask = np.any(mask_utils.decode(_pr))
                         else:
-                            self._add_error(TemporalBadError(pred, ex.gt[idx], ex))
-                            visualizer.draw(pred, TemporalBadError.short_name)
-                            continue
+                            pr_mask = False
+
+                        if _gt == None and not pr_mask:
+                            # gt and pred both have no mask
+                            fiou = 0.0
+                        elif _gt == None and pr_mask:
+                            # gt has no mask and pred has mask
+                            fiou = 0.0
+                            temp_union += 1
+                        elif _gt != None and not pr_mask:
+                            # gt has mask and pred has no mask
+                            fiou = 0.0
+                            temp_union += 1
+                        else:
+                            # gt and pred both have mask
+                            fiou = mask_utils.iou([_pr], [_gt], [False])
+                            temp_union += 1
+                        frame_iou[_i] = fiou
+
+                    temp_intersect = 0
+                    for _iou in frame_iou:
+                        if _iou > self.spatial_thr:
+                            temp_intersect += 1
+
+                    temporal_overlap = temp_intersect / temp_union
+
+                    # Test for SpatialBadError
+                    if temporal_overlap >= self.temporal_thr:
+                        self._add_error(SpatialBadError(pred, ex.gt[idx], ex))
+                        visualizer.draw(pred, SpatialBadError.short_name)
+                        continue
+
+                    # Test for TemporalBadError
+                    else:
+                        self._add_error(TemporalBadError(pred, ex.gt[idx], ex))
+                        visualizer.draw(pred, TemporalBadError.short_name)
+                        continue
 
                 # Test for ClassError
                 idx = ex.gt_noncls_iou[pred_idx, :].argmax()
@@ -333,20 +325,8 @@ class TIVERun(TIDERun):
                     visualizer.draw(pred, BackgroundError.short_name)
                     continue
 
-                # errors only for image
-                if not self.isvideo:
-                    # Test for BoxError
-                    idx = ex.gt_cls_iou[pred_idx, :].argmax()
-                    if self.bg_thresh <= ex.gt_cls_iou[pred_idx, idx] <= self.pos_thresh:
-                        # This detection would have been positive if it had higher IoU with this GT
-                        self._add_error(BoxError(pred, ex.gt[idx], ex))
-                        continue
-
-                    # A base case to catch uncaught errors
-                    self._add_error(OtherError(pred))
-                else:
-                    self._add_error(VideoOtherError(pred))
-                    visualizer.draw(pred, VideoOtherError.short_name)
+                self._add_error(VideoOtherError(pred))
+                visualizer.draw(pred, VideoOtherError.short_name)
         for truth in gt:
             # If the GT wasn't used in matching, meaning it's some kind of false negative
             if not truth['ignore'] and not truth['used']:
