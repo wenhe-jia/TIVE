@@ -12,7 +12,7 @@
 
 An easy-to-use, general toolbox to compute and evaluate the effect of video instance segmentation on overall performance. 
 
-[ArXiv]()(need to be updated).
+[ArXiv](https://arxiv.org/abs/tive)(need to be updated).
 
 ## Installation
 
@@ -157,11 +157,8 @@ And a summary plot for your model's errors:
 
 If you use TIVE in your project, please cite
 ```
-@inproceedings{jia2022tive,
-  author    = {Wenhe Jia and Lu Yang and Zilong Jia and Qing Song},
-  title     = {TIVE: A General Toolbox for Identifying Video Instance Segemntation Errors},
-  booktitle = {arXiv},
-  year      = {2022},
+@inproceedings{
+    TO Be Updated
 }
 ```
 
