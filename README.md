@@ -1,5 +1,7 @@
 # A General **T**oolbox for **I**dentifying **V**ideo Instance Segmentation **E**rrors
 
+![A summary plot](./examples/results_sequence_mask_summary.png)
+
 
 ```
 ████████╗██╗██╗   ██╗███████╗
