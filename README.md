@@ -60,7 +60,7 @@ And a summary plot for your model's errors:
 
 Shield: [![CC BY-NC 4.0][cc-by-nc-shield]][cc-by-nc]
 
-The majority of M2FP is licensed under a
+The majority of TIVE is licensed under a
 [Creative Commons Attribution-NonCommercial 4.0 International License](LICENSE).
 
 [![CC BY-NC 4.0][cc-by-nc-image]][cc-by-nc]
