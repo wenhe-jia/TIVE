@@ -1,21 +1,11 @@
-# A General **T**oolbox for **I**dentifying **V**ideo Instance Segmentation **E**rrors
+# A **T**oolbox for **I**dentifying **V**ideo Instance Segmentation **E**rrors
 
 <img src="./examples/tive_logo.svg" width="100px">
-![A summary plot](./examples/tive_logo.svg)
 
+> [A Toolbox for Identifying Video Instance Segmentation Errors]() <br>
+> [![paper](https://img.shields.io/badge/Paper-arxiv-b31b1b)](https://)
 
-```
-████████╗██╗██╗   ██╗███████╗
-╚══██╔══╝██║██║   ██║██╔════╝
-   ██║   ██║██║   ██║█████╗
-   ██║   ██║╚██╗ ██╔╝██╔══╝
-   ██║   ██║ ╚████╔╝ ███████╗
-   ╚═╝   ╚═╝  ╚═══╝  ╚══════╝
-```
-
-An easy-to-use, general toolbox to compute and evaluate the effect of video instance segmentation on overall performance. 
-
-[ArXiv](https://arxiv.org/abs/tive)(need to be updated).
+An toolbox to evaluate the effect of video instance segmentation errors on overall performance. 
 
 ## Installation
 
