@@ -24,7 +24,7 @@ The currently supported YouTube-VIS dataset. json file for YouTubeVIS-2021 `mini
 
 TIVE is meant as a drop-in replacement for the [YouTubeVIS Evaluation toolkit]([https://github.com/youtubevos/cocoapi]), get detailed evaluation results on YoutubeVIS-2021-minival subset. For usage, see [example.py](examples/tive_evaluate.py)
 
-This prints evaluation summary tables for [SeqFormer](https://github.com/wjf5203/VNext) to the console:
+Below are example evaluation summary tables for result.json of [SeqFormer](https://github.com/wjf5203/VNext) to the console:
 ```
 
 -- results_seq_r50 --
