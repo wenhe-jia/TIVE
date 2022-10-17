@@ -1,4 +1,4 @@
-# <img src="./sources/tive_logo.svg" width="40px"> TIVE
+# <img src="./sources/logo.svg" width="40px"> TIVE
 
 > [![paper](https://img.shields.io/badge/Paper-arxiv-b31b1b)](https://)
 
