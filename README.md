@@ -2,10 +2,9 @@
 
 <img src="./examples/tive_logo.svg" width="100px">
 
-> [A Toolbox for Identifying Video Instance Segmentation Errors]() <br>
 > [![paper](https://img.shields.io/badge/Paper-arxiv-b31b1b)](https://)
 
-An toolbox to evaluate the effect of video instance segmentation errors on overall performance. 
+An toolbox to evaluate the effects of video instance segmentation errors on overall performance. 
 
 ## Installation
 
@@ -40,7 +39,7 @@ tive.summarize()
 tive.plot(out_dir='./tive_output')
 ```
 
-This prints evaluation summary tables to the console:
+This prints evaluation summary tables for SeqFormer(https://github.com/wjf5203/VNext) to the console:
 ```
 
 -- results_seq_r50 --
@@ -148,13 +147,29 @@ And a summary plot for your model's errors:
 
 ## Citation
 
-If you use TIVE in your project, please cite
+If you use TIVE in your research or wish to refer to the baseline results, please use the following BibTeX entry.
+
 ```
-@inproceedings{
-    TO Be Updated
+@article{jia2022tive,
+  title={A Toolbox for Identifying Video Instance Segmentation Errors},
+  author={Wenhe Jia, Lu Yang, Zilong Jia, Wenyi Zhao, Yilin Zhou, Qing Song},
+  journal={arXiv},
+  year={2022}
 }
 ```
 
+If you find the code useful, please also consider the following MaskFormer and Mask2Former BibTeX entry.
+
+```BibTeX
+@inproceedings{bolya2020tide,
+  title={Tide: A general toolbox for identifying object detection errors},
+  author={Bolya, Daniel and Foley, Sean and Hays, James and Hoffman, Judy},
+  booktitle={European Conference on Computer Vision},
+  pages={558--573},
+  year={2020},
+  organization={Springer}
+}
+```
 
 ## Acknowledgement
 
