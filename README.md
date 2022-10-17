@@ -1,9 +1,9 @@
 # <img src="./examples/tive_logo.svg" width="40px"> TIVE
 
+> [![paper](https://img.shields.io/badge/Paper-arxiv-b31b1b)](https://)
+
 <img src="./examples/ErrorType.png"> 
 TIVE is a Toolbox for Identifying Video Instance Segmentation Errors. By isolating error predictions and weighting each type’s demage to mAP, TIVE can distinguish model charactors. TIVE can also report mAP over instance temporal length for real applications.
-
-> [![paper](https://img.shields.io/badge/Paper-arxiv-b31b1b)](https://)
 
 ## Installation
 
