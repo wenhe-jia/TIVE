@@ -1,5 +1,6 @@
 # A General **T**oolbox for **I**dentifying **V**ideo Instance Segmentation **E**rrors
 
+<img src="./examples/tive_logo.svg" width="100px">
 ![A summary plot](./examples/tive_logo.svg)
 
 
