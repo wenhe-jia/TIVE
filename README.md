@@ -1,4 +1,4 @@
-# <img src="./examples/tive_logo.svg" width="60px">      A **T**oolbox for **I**dentifying **V**ideo Instance Segmentation **E**rrors
+# <img src="./examples/tive_logo.svg" width="60px"> A **T**oolbox for **I**dentifying **V**ideo Instance Segmentation **E**rrors
 
 <img src="./examples/ErrorType.png"> 
 An toolbox to evaluate the effects of video instance segmentation errors on overall performance. 
@@ -21,22 +21,7 @@ The currently supported YouTube-VIS dataset. json file for YouTubeVIS-2021 `mini
 
 ## Usage
 
-TIVE is meant as a drop-in replacement for the [YouTubeVIS Evaluation toolkit]([https://github.com/youtubevos/cocoapi]), get detailed evaluation results on YoutubeVIS-2021-minival subset. For usage, see example.py()
-
-```python
-from tivecv import TIVE
-import tivecv.datasets as datasets
-
-image_root = 'path/to/youtubevis_2021_train/images'
-gt = datasets.YTVIS2021(path='path/to/youtubevis_2021_minival.json')
-result = datasets.YTVIS2021Result('path/to/your/results/file')
-
-tive = TIVE(isvideo=True, image_root=image_root)
-tive.evaluate_all(gt, result, mode=TIVE.MASK)
-
-tive.summarize()
-tive.plot(out_dir='./tive_output')
-```
+TIVE is meant as a drop-in replacement for the [YouTubeVIS Evaluation toolkit]([https://github.com/youtubevos/cocoapi]), get detailed evaluation results on YoutubeVIS-2021-minival subset. For usage, see [example.py](https://github.com/wenhe-jia/TIVE/blob/main/examples/tive_evaluate.py)
 
 This prints evaluation summary tables for [SeqFormer](https://github.com/wjf5203/VNext) to the console:
 ```
