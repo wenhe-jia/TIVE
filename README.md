@@ -38,7 +38,7 @@ tive.summarize()
 tive.plot(out_dir='./tive_output')
 ```
 
-This prints evaluation summary tables for SeqFormer(https://github.com/wjf5203/VNext) to the console:
+This prints evaluation summary tables for [SeqFormer](https://github.com/wjf5203/VNext) to the console:
 ```
 
 -- results_seq_r50 --
