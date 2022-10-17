@@ -1,8 +1,8 @@
-# <img src="./examples/tive_logo.svg" width="40px"> TIVE
+# <img src="./sources/tive_logo.svg" width="40px"> TIVE
 
 > [![paper](https://img.shields.io/badge/Paper-arxiv-b31b1b)](https://)
 
-<img src="./examples/ErrorType.png"> 
+<img src="./sources/ErrorType.png"> 
 TIVE is a Toolbox for Identifying Video Instance Segmentation Errors. By isolating error predictions and weighting each type’s demage to mAP, TIVE can distinguish model charactors. TIVE can also report mAP over instance temporal length for real applications.
 
 ## Installation
@@ -54,7 +54,7 @@ mask AP @ [50-95]: 43.37
 ```
 
 And a summary plot for your model's errors:
-<img src="./examples/results_sequence_mask_summary.png" width="800px">
+<img src="./sources/results_sequence_mask_summary.png" width="800px">
 
 
 ## License
