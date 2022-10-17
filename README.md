@@ -11,6 +11,7 @@ TIVE is available as a python package for python 3.6+, based on [TIDE](https://g
 
 ```shell
 pip3 install tidecv
+git clone https://github.com/wenhe-jia/TIVE.git
 ```
 
 
