@@ -1,7 +1,7 @@
-# <img src="./examples/tive_logo.svg" width="40px"> A **T**oolbox for **I**dentifying **V**ideo Instance Segmentation **E**rrors
+# <img src="./examples/tive_logo.svg" width="40px"> TIVE
 
 <img src="./examples/ErrorType.png"> 
-An toolbox to evaluate the effects of video instance segmentation errors on overall performance. 
+TIVE is a **T**oolbox for **I**dentifying **V**ideo Instance Segmentation **E**rrors. By isolating error predictions and weighting each type’s demage to mAP, TIVE can distinguish model charactors. TIVE can also report mAP over instance temporal length for real applications.
 
 > [![paper](https://img.shields.io/badge/Paper-arxiv-b31b1b)](https://)
 
