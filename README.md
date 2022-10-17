@@ -1,6 +1,6 @@
 # <img src="./examples/tive_logo.svg" width="60px">      A **T**oolbox for **I**dentifying **V**ideo Instance Segmentation **E**rrors
 
-<img src="./examples/ErrorType.pdf" width="100px"> An toolbox to evaluate the effects of video instance segmentation errors on overall performance. 
+<img src="./examples/ErrorType.png" width="100px"> An toolbox to evaluate the effects of video instance segmentation errors on overall performance. 
 
 > [![paper](https://img.shields.io/badge/Paper-arxiv-b31b1b)](https://)
 
