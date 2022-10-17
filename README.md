@@ -54,7 +54,7 @@ mask AP @ [50-95]: 43.37
 ```
 
 And a summary plot for your model's errors:
-<img src="./examples/results_sequence_mask_summary.png" width="400px">
+<img src="./examples/results_sequence_mask_summary.png" width="1000px">
 
 
 ## License
