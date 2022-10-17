@@ -1,4 +1,4 @@
-# <img src="./examples/tive_logo.svg" width="50px"> A **T**oolbox for **I**dentifying **V**ideo Instance Segmentation **E**rrors
+# <img src="./examples/tive_logo.svg" width="70px"> A **T**oolbox for **I**dentifying **V**ideo Instance Segmentation **E**rrors
 
 
 
