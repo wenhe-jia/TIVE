@@ -1,6 +1,6 @@
 # A **T**oolbox for **I**dentifying **V**ideo Instance Segmentation **E**rrors
 
-<img src="./examples/tive_logo.svg" width="100px">
+<img src="./examples/tive_logo.svg" width="50px">
 
 > [![paper](https://img.shields.io/badge/Paper-arxiv-b31b1b)](https://)
 
@@ -22,7 +22,7 @@ The currently supported YouTube-VIS dataset. json file for YouTubeVIS-2021 `mini
 
 ## Usage
 
-TIVE is meant as a drop-in replacement for the [YouTubeVIS Evaluation toolkit]([https://github.com/youtubevos/cocoapi]), get detailed evaluation results on YoutubeVIS-2021-minival subset:
+TIVE is meant as a drop-in replacement for the [YouTubeVIS Evaluation toolkit]([https://github.com/youtubevos/cocoapi]), get detailed evaluation results on YoutubeVIS-2021-minival subset. For usage, see example.py()
 
 ```python
 from tivecv import TIVE
