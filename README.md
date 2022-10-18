@@ -83,7 +83,7 @@ If you use TIVE in your research or wish to refer to the baseline results, pleas
 }
 ```
 
-If you find the code useful, please also consider the following MaskFormer and Mask2Former BibTeX entry.
+If you find the code useful, please also consider the following TIDE BibTeX entry.
 
 ```BibTeX
 @inproceedings{bolya2020tide,
