@@ -75,10 +75,10 @@ The majority of TIVE is licensed under a
 If you use TIVE in your research or wish to refer to the baseline results, please use the following BibTeX entry.
 
 ```
-@article{jia2022tive,
-  title={A Toolbox for Identifying Video Instance Segmentation Errors},
+@article{jia,
+  title={TIVE is a Toolbox for Identifying Video Instance Segmentation Errors},
   author={Wenhe Jia, Lu Yang, Zilong Jia, Wenyi Zhao, Yilin Zhou, Qing Song},
-  journal={arXiv},
+  journal={arXiv preprint arXiv:2210.08856},
   year={2022}
 }
 ```
