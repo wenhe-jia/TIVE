@@ -17,9 +17,9 @@ import os
 from tidecv.datasets import default_name
 from tidecv import functions as f
 
+# Suppoort video datasets with the same annotation format like YTVIS and OVIS
 
-
-def YTVIS2021(path: str = None, name: str = None) -> TiveData:
+def VideoData(path: str = None, name: str = None) -> TiveData:
     """
     Loads ground truth from a ytvis-style annotation file.
     """
@@ -66,7 +66,7 @@ def YTVIS2021(path: str = None, name: str = None) -> TiveData:
     return data
 
 
-def YTVIS2021Result(path: str, name: str = None) -> TiveData:
+def VideoDataResult(path: str, name: str = None) -> TiveData:
     """ Loads predictions from a ytvis-style results file. """
     if name is None: name = default_name(path)
 
@@ -92,7 +92,7 @@ def YTVIS2021Result(path: str, name: str = None) -> TiveData:
     return data
 
 
-def YTVIS2021_perimg(path: str = None, name: str = None) -> TiveData:
+def VideoData_perimg(path: str = None, name: str = None) -> TiveData:
     """
     Loads ground truth from a ytvis-style annotation file.
     """
@@ -142,7 +142,7 @@ def YTVIS2021_perimg(path: str = None, name: str = None) -> TiveData:
     return data
 
 
-def YTVIS2021Result_perimg(path: str, data_ann: TiveData, name: str = None) -> TiveData:
+def VideoDataResult_perimg(path: str, data_ann: TiveData, name: str = None) -> TiveData:
     """ Loads predictions from a ytvis-style results file. """
     if name is None: name = default_name(path)
 
