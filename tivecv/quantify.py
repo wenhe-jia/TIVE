@@ -168,7 +168,7 @@ class TIVERun(TIDERun):
     """ Holds the data for a single run of TIDE. """
 
     def __init__(self, gt: TiveData, preds: TiveData, pos_thresh: float, bg_thresh: float, mode: str, max_dets: int,
-                 run_errors: bool = True, isvideo: bool = False, spatial_thr: float = 0.1, temporal_thr: float = 0.4,
+                 run_errors: bool = True, isvideo: bool = False, spatial_thr: float = 0.1, temporal_thr: float = 0.7,
                  image_root: str = None, visualize_root: str = None):
         self.isvideo = isvideo
         self.temporal_thr = temporal_thr
