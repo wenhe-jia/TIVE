@@ -371,7 +371,7 @@ class TIVE(TIDE):
 
     # Threshold splits for different sequence temporal ranges
     YTVIS_SEQ_RANGE = [16, 32]
-
+    OVIS_SEQ_RANGE = [16, 32, 96]
 
     # The modes of evaluation
     BOX = 'bbox'
@@ -379,7 +379,7 @@ class TIVE(TIDE):
 
     def __init__(self, pos_threshold: float = 0.5, background_threshold: float = 0.1, mode: str = MASK,
                  isvideo: bool = False, spatial_thr: float = 0.1, temporal_thr: float = 0.7,
-                 image_root: str = None, visualize_root: str = None):
+                 image_root: str = None, visualize_root: str = None, dataset_name: str = 'ytvis'):
         super().__init__(pos_threshold, background_threshold, mode)
         self.isvideo = isvideo
         self.temporal_thr = temporal_thr
@@ -393,6 +393,12 @@ class TIVE(TIDE):
             TIDE._error_types = TIVE._error_types_video
 
         self.plotter = P.TivePlotter(isvideo=self.isvideo)
+
+        self.datase_name = dataset_name
+        if dataset_name == 'ytvis':
+            self.seq_range = TIVE.YTVIS_SEQ_RANGE
+        elif dataset_name == 'ovis':
+            self.seq_range = TIVE.OVIS_SEQ_RANGE
 
     def evaluate(self, gt: TiveData, preds: TiveData, pos_threshold: float = None, background_threshold: float = None,
                  mode: str = None, name: str = None, use_for_errors: bool = True) -> TIDERun:
@@ -409,25 +415,52 @@ class TIVE(TIDE):
 
         return run
 
-    def evaluate_all(self, gt: TiveData, preds: TiveData, seq_range: list = YTVIS_SEQ_RANGE,
+    def evaluate_all(self, gt: TiveData, preds: TiveData,
                      thresholds: list = COCO_THRESHOLDS, pos_threshold: float = None,
                      background_threshold: float = None, mode: str = None, name: str = None) -> dict:
-        gt_short, gt_medium, gt_long = self.divide_sequence(gt, seq_range)
-        preds_short, preds_medium, preds_long = self.divide_sequence(preds, seq_range)
 
-        # evaluate
-        # evaluate all gts and detections
-        print('=' * 40 + 'evaluating all gts and detections' + '=' * 40)
-        self.evaluate_range(gt, preds, thresholds, pos_threshold, background_threshold, mode, name)
-        # evaluate short
-        print('=' * 40 + 'evaluating short sequences' + '=' * 40)
-        self.evaluate_range(gt_short, preds_short, thresholds, pos_threshold, background_threshold, mode, 'short')
-        # evaluate medium
-        print('=' * 40 + 'evaluating medium sequences' + '=' * 40)
-        self.evaluate_range(gt_medium, preds_medium, thresholds, pos_threshold, background_threshold, mode, 'medium')
-        # evaluate long
-        print('=' * 40 + 'evaluating long sequences' + '=' * 40)
-        self.evaluate_range(gt_long, preds_long, thresholds, pos_threshold, background_threshold, mode, 'long')
+        if self.datase_name == 'ytvis':
+            gt_short, gt_medium, gt_long = self.divide_sequence_ytvis(gt, self.seq_range)
+            preds_short, preds_medium, preds_long = self.divide_sequence_ytvis(preds, self.seq_range)
+
+            # evaluate`
+            # evaluate all gts and detections
+            print('=' * 40 + 'evaluating all gts and detections' + '=' * 40)
+            self.evaluate_range(gt, preds, thresholds, pos_threshold, background_threshold, mode, name)
+            # evaluate short
+            print('=' * 40 + 'evaluating short sequences' + '=' * 40)
+            self.evaluate_range(gt_short, preds_short, thresholds, pos_threshold, background_threshold, mode, 'short')
+            # evaluate medium
+            print('=' * 40 + 'evaluating medium sequences' + '=' * 40)
+            self.evaluate_range(gt_medium, preds_medium, thresholds, pos_threshold, background_threshold, mode, 'medium')
+            # evaluate long
+            print('=' * 40 + 'evaluating long sequences' + '=' * 40)
+            self.evaluate_range(gt_long, preds_long, thresholds, pos_threshold, background_threshold, mode, 'long')
+
+        elif self.datase_name == 'ovis':
+            gt_short, gt_medium, gt_long, gt_extlong = self.divide_sequence_ytvis(gt, self.seq_range)
+            preds_short, preds_medium, preds_long, pred_extlong = self.divide_sequence_ytvis(preds, self.seq_range)
+
+            # evaluate`
+            # evaluate all gts and detections
+            print('=' * 40 + 'evaluating all gts and detections' + '=' * 40)
+            self.evaluate_range(gt, preds, thresholds, pos_threshold, background_threshold, mode, name)
+            # evaluate short
+            print('=' * 40 + 'evaluating short sequences' + '=' * 40)
+            self.evaluate_range(gt_short, preds_short, thresholds, pos_threshold, background_threshold, mode, 'short')
+            # evaluate medium
+            print('=' * 40 + 'evaluating medium sequences' + '=' * 40)
+            self.evaluate_range(gt_medium, preds_medium, thresholds, pos_threshold, background_threshold, mode, 'medium')
+            # evaluate long
+            print('=' * 40 + 'evaluating long sequences' + '=' * 40)
+            self.evaluate_range(gt_long, preds_long, thresholds, pos_threshold, background_threshold, mode, 'long')
+            # evaluate extra long
+            print('=' * 40 + 'evaluating extra long sequences' + '=' * 40)
+            self.evaluate_range(gt_extlong, preds_extlong, thresholds, pos_threshold, background_threshold, mode, 'long')
+
+        else:
+            raise Exception('unsupport dataset !!!')
+
 
     def summarize(self):
         """ Summarizes the mAP values and errors for all runs in this TIDE object. Results are printed to the console. """
@@ -530,7 +563,7 @@ class TIVE(TIDE):
         for run_name, run in self.runs.items():
             self.plotter.make_summary_plot(out_dir, errors, run_name, run.mode, hbar_names=True)
 
-    def divide_sequence(self, data_in: TiveData, seq_thresholds):
+    def divide_sequence_ytvis(self, data_in: TiveData, seq_thresholds):
         data_short, data_medium, data_long = TiveData('short'), TiveData('medium'), TiveData('long')
 
         # divide annos or detections into short, medium, long
@@ -562,3 +595,45 @@ class TIVE(TIDE):
                     data_long._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
 
         return data_short, data_medium, data_long
+
+    def divide_sequence_ovis(self, data_in: TiveData, seq_thresholds):
+        data_short, data_medium, data_long, data_extlong = \
+            TiveData('short'), TiveData('medium'), TiveData('long'), TiveData('extlong')
+
+        # divide annos or detections into short, medium, long
+        for im_id in data_in.images:
+            annos = data_in.get(im_id)
+            for _a in annos:
+                if _a['gt_length'] <= seq_thresholds[0]:
+                    if im_id not in data_short.images:
+                        data_short.add_image(im_id, data_in.images[im_id]['name'])
+                    data_short._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'],
+                                    _a['gt_length'])
+                else:
+                    data_short._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
+
+                if seq_thresholds[1] >= _a['gt_length'] > seq_thresholds[0]:
+                    if im_id not in data_medium.images:
+                        data_medium.add_image(im_id, data_in.images[im_id]['name'])
+                    data_medium._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'],
+                                     _a['gt_length'])
+                else:
+                    data_medium._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
+
+                if seq_thresholds[2] >= _a['gt_length'] > seq_thresholds[1]:
+                    if im_id not in data_long.images:
+                        data_long.add_image(im_id, data_in.images[im_id]['name'])
+                    data_long._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'],
+                                     _a['gt_length'])
+                else:
+                    data_long._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
+
+                if _a['gt_length'] > seq_thresholds[2]:
+                    if im_id not in data_extlong.images:
+                        data_extlong.add_image(im_id, data_in.images[im_id]['name'])
+                    data_extlong._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], _a['ignore'],
+                                   _a['gt_length'])
+                else:
+                    data_extlong._add(im_id, _a['class'], _a['bbox'], _a['mask'], _a['score'], True, _a['gt_length'])
+
+        return data_short, data_medium, data_long, data_extlong
