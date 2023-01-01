@@ -438,8 +438,8 @@ class TIVE(TIDE):
             self.evaluate_range(gt_long, preds_long, thresholds, pos_threshold, background_threshold, mode, 'long')
 
         elif self.datase_name == 'ovis':
-            gt_short, gt_medium, gt_long, gt_extlong = self.divide_sequence_ytvis(gt, self.seq_range)
-            preds_short, preds_medium, preds_long, pred_extlong = self.divide_sequence_ytvis(preds, self.seq_range)
+            gt_short, gt_medium, gt_long, gt_extlong = self.divide_sequence_ovis(gt, self.seq_range)
+            preds_short, preds_medium, preds_long, preds_extlong = self.divide_sequence_ovis(preds, self.seq_range)
 
             # evaluate`
             # evaluate all gts and detections
@@ -456,7 +456,7 @@ class TIVE(TIDE):
             self.evaluate_range(gt_long, preds_long, thresholds, pos_threshold, background_threshold, mode, 'long')
             # evaluate extra long
             print('=' * 40 + 'evaluating extra long sequences' + '=' * 40)
-            self.evaluate_range(gt_extlong, preds_extlong, thresholds, pos_threshold, background_threshold, mode, 'long')
+            self.evaluate_range(gt_extlong, preds_extlong, thresholds, pos_threshold, background_threshold, mode, 'extlong')
 
         else:
             raise Exception('unsupport dataset !!!')

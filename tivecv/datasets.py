@@ -14,6 +14,8 @@ import shutil
 import json
 import os
 
+from pycocotools import mask as mask_utils
+
 from tidecv.datasets import default_name
 from tidecv import functions as f
 
@@ -84,8 +86,9 @@ def VideoDataResult(path: str, name: str = None) -> TiveData:
         mask_len = 0
         if mask != None:
             for _m in mask:
-                if np.any(_m):
-                    mask_len += 1
+                if _m is not None:
+                    if np.any(mask_utils.decode(_m)):
+                        mask_len += 1
 
         data.add_detection(video, _cls, score, box, mask, gt_length=mask_len)
 
