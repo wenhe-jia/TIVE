@@ -6,11 +6,9 @@ from tivecv import TIVE
 import tivecv.datasets as datasets
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--results_path', type=str, default='/home/user/Program/m2f/vis/MaskTrackRCNN/work_dirs/masktrack_rcnn_r50_fpn_1x_ovis_pretrain_wo_roihead/results.pkl.json', help='video root directory')
-# parser.add_argument('--results_path', type=str, default='/home/user/Program/jwh/VNext/projects/IDOL/idol_ytvismini_1/inference/results.json', help='video root directory')
-parser.add_argument('--gt_path', type=str, default='/share/dataset/VIS-Data/OVIS-mini/annotations_valid_mini_continuous.json', help='video root directory')
-# parser.add_argument('--gt_path', type=str, default='/home/user/Program/jwh/VNext/datasets/ytvis_2021_mini/annotations/instances_val_sub.json', help='video root directory')
-parser.add_argument('--dataset_name', type=str, default='ovis', help='video root directory')
+parser.add_argument('--results_path', type=str, default='path/to/your/prediction/file/results.json', help='video root directory')
+parser.add_argument('--gt_path', type=str, default='path/to/your/annoattion/file/annotations.json', help='video root directory')
+parser.add_argument('--dataset_name', type=str, default='ytvis', help='video root directory')
 args = parser.parse_args()
 
 # load ytvis style annotation and result json files
